@@ -1,6 +1,8 @@
 -- =====================================================================
---  FarmaLembra — Farmamax (Paulino Neves – MA)
+--  FarmaLembra — lembretes de medicamentos de uso contínuo
 --  Esquema completo do banco de dados (Supabase / Postgres)
+--  (o mesmo arquivo serve para qualquer farmácia: o nome dela é
+--   preenchido depois, na tela Configurações do sistema)
 --
 --  COMO USAR: copie TODO este arquivo, cole no "SQL Editor" do Supabase
 --  e clique em "Run". Pode rodar de novo depois sem perder dados.
@@ -66,9 +68,9 @@ create table if not exists public.perfis (
 -- 2.2 Configurações (sempre UMA linha, id = 1)
 create table if not exists public.configuracoes (
   id                            smallint primary key default 1 check (id = 1),
-  nome_farmacia                 text not null default 'Farmamax',
+  nome_farmacia                 text not null default 'Minha Farmácia',
   telefone_farmacia             text not null default '',
-  endereco                      text not null default 'Paulino Neves – MA',
+  endereco                      text not null default '',
   horario_funcionamento         text not null default '',
   logo_url                      text not null default '',
   dias_antecedencia             int  not null default 5  check (dias_antecedencia between 0 and 60),
@@ -621,6 +623,16 @@ begin
   return v_l;
 end $$;
 
+-- Nome, telefone e endereço da farmácia para a tela de login e a Política de
+-- Privacidade (que abrem SEM login). Só informação pública — nada de clientes.
+create or replace function public.dados_publicos_farmacia()
+returns json
+language sql stable security definer set search_path = public
+as $$
+  select json_build_object('nome', nome_farmacia, 'telefone', telefone_farmacia, 'endereco', endereco)
+  from public.configuracoes where id = 1
+$$;
+
 -- Marca como "sem_retorno" os lembretes enviados há mais de X dias sem recompra.
 -- Roda todo dia pelo pg_cron e também quando o painel é aberto.
 create or replace function public.atualizar_status_lembretes()
@@ -824,6 +836,9 @@ grant execute on function
   public.relatorio_top_clientes(int, int),
   public.relatorio_top_medicamentos(int)
 to authenticated;
+
+-- Única coisa que o visitante sem login pode ler: nome/telefone/endereço da farmácia
+grant execute on function public.dados_publicos_farmacia() to anon, authenticated;
 
 
 -- ---------------------------------------------------------------------

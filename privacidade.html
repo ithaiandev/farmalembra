@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Política de Privacidade · Farmamax</title>
+  <title>Política de Privacidade · FarmaLembra</title>
   <meta name="theme-color" content="#0b63c5">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
@@ -18,9 +18,9 @@
 </head>
 <body>
   <article class="documento">
-    <h1>Política de Privacidade — <span data-nome>Farmamax</span></h1>
-    <p class="suave">Esta página explica, de forma simples, como a <strong data-nome>Farmamax</strong>
-      (<span data-cidade>Paulino Neves – MA</span>) usa seus dados no serviço de lembretes pelo WhatsApp,
+    <h1>Política de Privacidade — <span data-nome>da farmácia</span></h1>
+    <p class="suave">Esta página explica, de forma simples, como a <strong data-nome>farmácia</strong><span data-endereco></span>
+      usa seus dados no serviço de lembretes pelo WhatsApp,
       conforme a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).</p>
 
     <h2>1. Quais dados guardamos</h2>
@@ -56,18 +56,26 @@
 
     <h2>7. Seus direitos</h2>
     <p>Você pode pedir para ver, corrigir ou apagar seus dados, ou cancelar a autorização, a qualquer momento,
-      pelo telefone <strong data-telefone></strong> ou no balcão da farmácia.</p>
+      <span data-tem-telefone class="oculto">pelo telefone <strong data-telefone></strong> ou </span>no balcão da farmácia.</p>
 
     <p class="suave pequeno">Última atualização: outubro de 2026.</p>
     <p><a href="index.html">← Voltar</a></p>
+    <p class="suave pequeno">Sistema de lembretes: FarmaLembra.</p>
   </article>
 
   <script type="module">
-    import { CONFIG } from './js/config.js';
-    document.querySelectorAll('[data-nome]').forEach((el) => (el.textContent = CONFIG.NOME_FARMACIA));
-    document.querySelectorAll('[data-cidade]').forEach((el) => (el.textContent = CONFIG.CIDADE));
-    document.querySelectorAll('[data-telefone]').forEach((el) => (el.textContent = CONFIG.TELEFONE_FARMACIA));
-    document.title = `Política de Privacidade · ${CONFIG.NOME_FARMACIA}`;
+    // Nome, endereço e telefone vêm das Configurações do sistema (não precisa editar este arquivo)
+    import { dadosPublicosFarmacia } from './js/store.js';
+    const f = await dadosPublicosFarmacia();
+    if (f?.nome) {
+      document.querySelectorAll('[data-nome]').forEach((el) => (el.textContent = f.nome));
+      document.title = `Política de Privacidade · ${f.nome}`;
+    }
+    if (f?.endereco) document.querySelector('[data-endereco]').textContent = ` (${f.endereco})`;
+    if (f?.telefone) {
+      document.querySelector('[data-telefone]').textContent = f.telefone;
+      document.querySelector('[data-tem-telefone]').classList.remove('oculto');
+    }
   </script>
 </body>
 </html>

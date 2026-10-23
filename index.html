@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Entrar · FarmaLembra</title>
   <meta name="theme-color" content="#0b63c5">
+  <meta name="description" content="FarmaLembra — lembretes de medicamentos de uso contínuo pelo WhatsApp">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="img/icone-192.png">
@@ -24,9 +25,10 @@
   <main class="tela-login">
     <div class="caixa-login">
       <div class="logo">
-        <img src="img/logo.svg" alt="" data-logo>
-        <h1 data-nome-farmacia>Farmamax</h1>
-        <span class="suave pequeno">Lembretes de uso contínuo</span>
+        <img src="img/logo.svg" alt="">
+        <h1 class="wordmark">Farma<span>Lembra</span></h1>
+        <span class="suave pequeno">Lembretes de medicamentos de uso contínuo</span>
+        <span class="farmacia-login oculto" data-nome-farmacia></span>
       </div>
 
       <div class="aviso oculto" data-aviso></div>
@@ -66,14 +68,22 @@
 
   <script type="module">
     import { supabase, configurado } from './js/supabase.js';
-    import { CONFIG } from './js/config.js';
     import { entrar, recuperarSenha, definirNovaSenha } from './js/auth.js';
+    import { dadosPublicosFarmacia } from './js/store.js';
     import { toast, comBotaoOcupado } from './js/ui.js';
 
     const $ = (s) => document.querySelector(s);
     const aviso = $('[data-aviso]');
-    $('[data-nome-farmacia]').textContent = CONFIG.NOME_FARMACIA;
-    if (CONFIG.LOGO_URL) $('[data-logo]').src = CONFIG.LOGO_URL;
+
+    // Mostra de qual farmácia é este acesso (vem das Configurações)
+    if (configurado) {
+      dadosPublicosFarmacia().then((f) => {
+        if (!f?.nome) return;
+        const el = $('[data-nome-farmacia]');
+        el.textContent = f.nome;
+        el.classList.remove('oculto');
+      });
+    }
 
     function mostrar(tela) {
       document.querySelectorAll('[data-tela]').forEach((f) => f.classList.toggle('oculto', f.dataset.tela !== tela));

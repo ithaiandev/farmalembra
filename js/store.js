@@ -3,7 +3,6 @@
 // configurações da farmácia e modelos de mensagem
 // =====================================================================
 import { supabase } from './supabase.js';
-import { CONFIG } from './config.js';
 
 let config = null;
 let modelos = null;
@@ -14,9 +13,9 @@ export async function obterConfig(forcar = false) {
   const { data, error } = await supabase.from('configuracoes').select('*').eq('id', 1).maybeSingle();
   if (error) throw error;
   config = {
-    nome_farmacia: CONFIG.NOME_FARMACIA,
-    telefone_farmacia: CONFIG.TELEFONE_FARMACIA,
-    endereco: CONFIG.CIDADE,
+    nome_farmacia: 'a farmácia',
+    telefone_farmacia: '',
+    endereco: '',
     horario_funcionamento: '',
     logo_url: '',
     dias_antecedencia: 5,
@@ -25,6 +24,16 @@ export async function obterConfig(forcar = false) {
     ...(data || {}),
   };
   return config;
+}
+
+/**
+ * Nome, telefone e endereço da farmácia SEM precisar de login
+ * (usado na tela de login e na Política de Privacidade).
+ */
+export async function dadosPublicosFarmacia() {
+  const { data, error } = await supabase.rpc('dados_publicos_farmacia');
+  if (error || !data) return null;
+  return data;
 }
 
 /** Todos os modelos de mensagem */

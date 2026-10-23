@@ -16,14 +16,13 @@ export async function render(el) {
 
     <form class="card" data-form-cfg novalidate>
       <h2>🏪 Dados da farmácia</h2>
+      <p class="suave pequeno">Aparecem nas mensagens, no topo do sistema, na tela de login e na Política de Privacidade.</p>
       <label class="campo"><span>Nome da farmácia</span><input name="nome_farmacia" required value="${esc(cfg.nome_farmacia)}"></label>
       <div class="grade-2">
         <label class="campo"><span>Telefone</span><input name="telefone_farmacia" value="${esc(cfg.telefone_farmacia)}" placeholder="(98) 9 9999-9999"></label>
         <label class="campo"><span>Horário de funcionamento</span><input name="horario_funcionamento" value="${esc(cfg.horario_funcionamento)}" placeholder="seg. a sáb., 7h às 21h"></label>
       </div>
       <label class="campo"><span>Endereço</span><input name="endereco" value="${esc(cfg.endereco)}"></label>
-      <label class="campo"><span>Link da logo (opcional)</span><input name="logo_url" type="url" value="${esc(cfg.logo_url)}" placeholder="https://...">
-        <small>Deixe vazio para usar a logo padrão (img/logo.svg).</small></label>
 
       <h2 style="margin-top:10px">🔔 Lembretes</h2>
       <div class="grade-2">
@@ -95,7 +94,6 @@ export async function render(el) {
       telefone_farmacia: d.telefone_farmacia,
       endereco: d.endereco,
       horario_funcionamento: d.horario_funcionamento,
-      logo_url: d.logo_url,
       dias_antecedencia: Number(d.dias_antecedencia),
       dias_para_considerar_recompra: Number(d.dias_para_considerar_recompra),
       modo_envio: d.modo_envio,
@@ -108,7 +106,8 @@ export async function render(el) {
       if (erro) return mostrarErro(erro);
       limparCache();
       toast('Configurações salvas.' + (dados.dias_antecedencia !== cfg.dias_antecedencia ? ' Datas dos lembretes recalculadas.' : ''));
-      document.querySelector('[data-nome-farmacia]').textContent = dados.nome_farmacia;
+      const subtitulo = document.querySelector('[data-nome-farmacia]');
+      if (subtitulo) subtitulo.textContent = dados.nome_farmacia;
       recarregar();
     }, 'Salvando...');
   });

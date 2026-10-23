@@ -1,7 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0b63c5"/>
-  <rect x="206" y="96" width="100" height="320" rx="22" fill="#ffffff"/>
-  <rect x="96" y="206" width="320" height="100" rx="22" fill="#ffffff"/>
-  <circle cx="392" cy="392" r="78" fill="#12924a" stroke="#ffffff" stroke-width="18"/>
-  <path d="M356 392l26 26 46-50" fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- FarmaLembra: cápsula de remédio + selo de lembrete -->
+  <defs>
+    <linearGradient id="fundo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b63c5"/>
+      <stop offset="1" stop-color="#0a8f6a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#fundo)"/>
+  <g transform="rotate(-45 236 276)">
+    <rect x="96" y="216" width="280" height="120" rx="60" fill="#ffffff"/>
+    <path d="M236 216h80a60 60 0 0 1 0 120h-80z" fill="#b8f0d2"/>
+    <line x1="236" y1="216" x2="236" y2="336" stroke="#0b63c5" stroke-width="10"/>
+  </g>
+  <circle cx="384" cy="128" r="64" fill="#ffb020" stroke="#ffffff" stroke-width="16"/>
+  <path d="M384 98v34" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="384" cy="156" r="9" fill="#ffffff"/>
 </svg>

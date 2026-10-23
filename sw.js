@@ -3,11 +3,11 @@
 // Estratégia: sempre busca a versão nova na internet; se estiver sem
 // internet, usa a cópia guardada. (Os dados do Supabase nunca são guardados.)
 // =====================================================================
-const CACHE = 'farmalembra-v1';
+const CACHE = 'farmalembra-v2';
 
 const ARQUIVOS = [
   './', 'index.html', 'app.html', 'privacidade.html', 'manifest.json',
-  'css/style.css', 'img/logo.svg', 'img/icone-192.png', 'img/icone-512.png',
+  'css/style.css', 'img/logo.svg', 'img/icone-192.png', 'img/icone-512.png', 'img/icone-maskable-512.png',
   'js/config.js', 'js/supabase.js', 'js/auth.js', 'js/router.js', 'js/utils.js',
   'js/ui.js', 'js/store.js', 'js/fila.js', 'js/mensagens.js',
 ];

@@ -21,9 +21,12 @@
 </head>
 <body>
   <header class="topo">
-    <a class="marca" href="#/painel">
-      <img src="img/logo.svg" alt="" data-logo>
-      <strong data-nome-farmacia>Farmamax</strong>
+    <a class="marca" href="#/painel" aria-label="FarmaLembra — início">
+      <img src="img/logo.svg" alt="">
+      <span class="marca-texto">
+        <strong class="wordmark">Farma<span>Lembra</span></strong>
+        <small data-nome-farmacia></small>
+      </span>
     </a>
     <span class="espaco"></span>
     <span class="usuario" data-usuario></span>
@@ -65,7 +68,6 @@
     import { exigirLogin, sessao, ehAdmin, sair } from './js/auth.js';
     import { iniciarRouter } from './js/router.js';
     import { obterConfig } from './js/store.js';
-    import { CONFIG } from './js/config.js';
     import { esc } from './js/utils.js';
 
     // Modo escuro
@@ -83,11 +85,9 @@
         `${esc(sessao.perfil.nome || sessao.user.email)}<br><small>${ehAdmin() ? 'Administrador' : 'Atendente'}</small>`;
       if (!ehAdmin()) document.querySelectorAll('[data-so-admin]').forEach((el) => el.remove());
 
-      // Nome e logo da farmácia (vêm das Configurações)
+      // Nome da farmácia aparece embaixo da marca (vem das Configurações)
       obterConfig().then((cfg) => {
         document.querySelector('[data-nome-farmacia]').textContent = cfg.nome_farmacia;
-        const logo = cfg.logo_url || CONFIG.LOGO_URL;
-        if (logo) document.querySelector('[data-logo]').src = logo;
       }).catch(() => {});
 
       iniciarRouter(document.getElementById('conteudo'));
