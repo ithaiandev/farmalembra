@@ -1,10 +1,16 @@
 // =====================================================================
-// "Modo fila" de envio pelo WhatsApp (wa.me)
-// Mostra um cliente por vez: Enviar → abre o WhatsApp → volta → próximo.
+// "Modo fila" de envio pelo WhatsApp
+// Mostra um cliente por vez: Enviar → WhatsApp → volta → próximo.
 // Usado nos lembretes e nas campanhas.
+//
+// Sobre imagens: o link wa.me só leva TEXTO. Para a foto ir junto:
+//  - celular: botão "Enviar com a imagem" abre o menu Compartilhar
+//    (imagem + texto) e a pessoa escolhe WhatsApp e o contato;
+//  - computador: "Copiar imagem" e colar (Ctrl+V) na conversa.
 // =====================================================================
 import { abrirModal, toast, mostrarErro } from './ui.js';
 import { esc, formatarTelefone, linkWhatsApp } from './utils.js';
+import { podeCompartilharArquivo, copiarImagem } from './imagens.js';
 
 /**
  * abrirFila({
@@ -14,13 +20,22 @@ import { esc, formatarTelefone, linkWhatsApp } from './utils.js';
  *   aoEnviar: async (item, mensagem) => {},   // grava no banco
  *   extras: [{ rotulo, classe, acao: async (item) => {} }],  // ex.: "Cliente recomprou"
  *   jaEnviados = 0, total = itens.length,     // para o progresso "12/80"
+ *   arquivo = null,      // imagem (File) para enviar junto
+ *   linkImagem = null,   // link público da imagem (usado só quando a foto não vai como arquivo)
  * })
  * Resolve com { enviados, pulados, outros } quando a fila fecha.
  */
-export function abrirFila({ titulo, itens, montar, aoEnviar, extras = [], jaEnviados = 0, total = null }) {
+export function abrirFila({
+  titulo, itens, montar, aoEnviar, extras = [], jaEnviados = 0, total = null, arquivo = null, linkImagem = null,
+}) {
   const fila = [...itens];
   const totalGeral = total ?? fila.length + jaEnviados;
   const placar = { enviados: 0, pulados: 0, outros: 0 };
+  const temImagem = Boolean(arquivo);
+  const podeCompartilhar = temImagem && podeCompartilharArquivo(arquivo);
+  const ehCelular = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  // O link só entra no texto se a foto não puder ir como arquivo (ainda não carregou)
+  const anexarLink = Boolean(linkImagem) && !temImagem;
   let atual = null;
   let dadosAtuais = null;
 
@@ -42,6 +57,40 @@ export function abrirFila({ titulo, itens, montar, aoEnviar, extras = [], jaEnvi
             <button type="button" class="btn btn-primario btn-grande" data-ok>Fechar</button>
           </div>`;
         area.querySelector('[data-ok]').addEventListener('click', () => fechar(placar));
+      };
+
+      const registrarEnvio = async (msg) => {
+        try {
+          await aoEnviar(atual, msg);
+          placar.enviados++;
+        } catch (erro) {
+          mostrarErro(erro, 'A mensagem foi aberta, mas não consegui registrar o envio.');
+        }
+        proximo();
+      };
+
+      const htmlBotoes = () => {
+        if (!temImagem) {
+          return '<button type="button" class="btn btn-whats btn-grande" data-enviar>💬 Enviar no WhatsApp</button>';
+        }
+        let h = '';
+        if (podeCompartilhar) {
+          h += `
+            <button type="button" class="btn btn-whats btn-grande" data-compartilhar>📷 Enviar com a imagem</button>
+            <small class="suave">Abre o menu Compartilhar: escolha <strong>WhatsApp</strong> e procure
+              <strong>${esc(dadosAtuais.nome)}</strong>.</small>`;
+        }
+        if (!ehCelular || !podeCompartilhar) {
+          h += `
+            <div class="aviso info">🖥️ <span>No computador (WhatsApp Web): <strong>1)</strong> <em>Copiar imagem</em>
+              <strong>2)</strong> <em>${podeCompartilhar ? 'Abrir conversa' : 'Enviar no WhatsApp'}</em>
+              <strong>3)</strong> na conversa, aperte <strong>Ctrl+V</strong> para colar a imagem e envie.</span></div>
+            <button type="button" class="btn btn-sec" data-copiar-imagem>📋 Copiar imagem</button>`;
+        }
+        h += podeCompartilhar
+          ? '<button type="button" class="btn btn-sec" data-enviar>💬 Abrir conversa (só o texto)</button>'
+          : '<button type="button" class="btn btn-whats btn-grande" data-enviar>💬 Enviar no WhatsApp</button>';
+        return h;
       };
 
       const proximo = async () => {
@@ -72,26 +121,46 @@ export function abrirFila({ titulo, itens, montar, aoEnviar, extras = [], jaEnvi
             <textarea rows="6" data-msg>${esc(dadosAtuais.mensagem)}</textarea>
           </label>
           <div class="fila-botoes">
-            <button type="button" class="btn btn-whats btn-grande" data-enviar>💬 Enviar no WhatsApp</button>
+            ${htmlBotoes()}
             <div class="fila-secundarios">
               ${extras.map((x, i) => `<button type="button" class="btn ${x.classe || 'btn-sec'}" data-extra="${i}">${esc(x.rotulo)}</button>`).join('')}
               <button type="button" class="btn btn-sec" data-pular>Pular ⏭</button>
             </div>
           </div>`;
 
-        // IMPORTANTE: window.open precisa acontecer direto no clique,
-        // senão o navegador bloqueia a nova aba.
-        area.querySelector('[data-enviar]').addEventListener('click', async (e) => {
-          const msg = area.querySelector('[data-msg]').value.trim();
-          window.open(linkWhatsApp(dadosAtuais.telefone, msg), '_blank', 'noopener');
+        const texto = () => area.querySelector('[data-msg]').value.trim();
+
+        // IMPORTANTE: window.open / navigator.share precisam acontecer direto
+        // no clique, senão o navegador bloqueia.
+        area.querySelector('[data-enviar]').addEventListener('click', (e) => {
+          const msg = texto();
+          const comLink = anexarLink ? `${msg}\n\n${linkImagem}` : msg;
+          window.open(linkWhatsApp(dadosAtuais.telefone, comLink), '_blank', 'noopener');
           e.currentTarget.disabled = true;
+          registrarEnvio(comLink);
+        });
+
+        area.querySelector('[data-compartilhar]')?.addEventListener('click', async (e) => {
+          const botao = e.currentTarget;
+          const msg = texto();
+          botao.disabled = true;
           try {
-            await aoEnviar(atual, msg);
-            placar.enviados++;
+            await navigator.share({ files: [arquivo], text: msg });
           } catch (erro) {
-            mostrarErro(erro, 'A mensagem foi aberta, mas não consegui registrar o envio.');
+            botao.disabled = false;
+            if (erro?.name !== 'AbortError') mostrarErro(erro, 'Não foi possível abrir o compartilhamento.');
+            return; // cancelou: continua no mesmo cliente
           }
-          proximo();
+          registrarEnvio(msg);
+        });
+
+        area.querySelector('[data-copiar-imagem]')?.addEventListener('click', async () => {
+          try {
+            await copiarImagem(arquivo);
+            toast('Imagem copiada! Agora clique em "Enviar no WhatsApp" e cole com Ctrl+V.');
+          } catch (erro) {
+            mostrarErro(erro, erro?.message || 'Não foi possível copiar a imagem.');
+          }
         });
 
         area.querySelector('[data-pular]').addEventListener('click', () => {

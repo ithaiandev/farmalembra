@@ -209,8 +209,9 @@ export async function render(el, { params }) {
 
           <hr class="separador">
           <h3>2️⃣ Um por um (com o nome de cada cliente)</h3>
-          <p class="suave pequeno">Abre a conversa de cada cliente com a mensagem pronta, um de cada vez.
-            A imagem vai como link no fim do texto.</p>
+          <p class="suave pequeno">Um cliente de cada vez, com o nome dele na mensagem.
+            <strong>Com imagem:</strong> no celular, o botão "Enviar com a imagem" abre o menu Compartilhar —
+            escolha WhatsApp e o contato. No computador, copie a imagem e cole (Ctrl+V) na conversa.</p>
           <button type="button" class="btn btn-whats btn-grande btn-bloco" data-um-por-um>▶ Enviar um por um</button>
         </div>
 
@@ -558,16 +559,17 @@ export async function render(el, { params }) {
     if (!ok) return;
 
     await marcarStatus('enviando');
-    const link = imagemUrl ? `\n\n${imagemUrl}` : '';
     const placar = await abrirFila({
       titulo: camp.titulo,
       itens: faltam,
       jaEnviados: sel.length - faltam.length,
       total: sel.length,
+      arquivo: imagemUrl ? arquivoImagem : null, // a foto vai como arquivo (celular: Compartilhar; PC: colar)
+      linkImagem: imagemUrl,                     // só usado se a foto não puder ir como arquivo
       montar: async (c) => ({
         nome: c.nome,
         telefone: c.telefone,
-        mensagem: (await mensagemLivre(camp.mensagem, c)) + link,
+        mensagem: await mensagemLivre(camp.mensagem, c),
       }),
       aoEnviar: async (c) => {
         const { error } = await supabase.from('campanha_envios')

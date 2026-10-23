@@ -180,10 +180,17 @@ export const VARIAVEIS = [
   { chave: '{horario}', desc: 'horário de funcionamento' },
 ];
 
-/** Link do WhatsApp com a mensagem pronta */
+/**
+ * Link do WhatsApp com a mensagem pronta.
+ * Usa api.whatsapp.com/send em vez de wa.me: o redirecionamento do wa.me
+ * estraga os emojis (chegam como "?" ou "�"); este endereço entrega o texto intacto.
+ */
 export function linkWhatsApp(telefone, texto = '') {
   const tel = String(telefone ?? '').replace(/\D/g, '');
-  return `https://wa.me/${tel}` + (texto ? `?text=${encodeURIComponent(texto)}` : '');
+  const params = new URLSearchParams({ phone: tel });
+  if (texto) params.set('text', texto.normalize('NFC'));
+  // URLSearchParams troca espaço por "+"; %20 é mais seguro para o WhatsApp
+  return `https://api.whatsapp.com/send?${params.toString().replace(/\+/g, '%20')}`;
 }
 
 // ---------------------------------------------------------------------

@@ -34,7 +34,7 @@ export async function render(el) {
 
       <h2 style="margin-top:10px">💬 Modo de envio</h2>
       <label class="checkbox"><input type="radio" name="modo_envio" value="manual" ${cfg.modo_envio !== 'api' ? 'checked' : ''}>
-        <span>Manual (botões wa.me) <small>Grátis. A atendente clica e envia pelo WhatsApp da farmácia.</small></span></label>
+        <span>Manual (botões do WhatsApp) <small>Grátis. A atendente clica e envia pelo WhatsApp da farmácia.</small></span></label>
       <label class="checkbox"><input type="radio" name="modo_envio" value="api" ${cfg.modo_envio === 'api' ? 'checked' : ''}>
         <span>Automático (API oficial do WhatsApp) <small>Envia sozinho às 09:00. Precisa configurar a Meta antes (README, parte 9). O modo manual continua funcionando.</small></span></label>
       <label class="checkbox"><input type="checkbox" name="whatsapp_api_ativo" ${cfg.whatsapp_api_ativo ? 'checked' : ''}>
