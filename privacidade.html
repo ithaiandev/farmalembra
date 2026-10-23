@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Política de Privacidade · Farmamax</title>
+  <meta name="theme-color" content="#0b63c5">
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    try {
+      const t = localStorage.getItem('tema');
+      if (t === 'escuro' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.dataset.tema = 'escuro';
+      }
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <article class="documento">
+    <h1>Política de Privacidade — <span data-nome>Farmamax</span></h1>
+    <p class="suave">Esta página explica, de forma simples, como a <strong data-nome>Farmamax</strong>
+      (<span data-cidade>Paulino Neves – MA</span>) usa seus dados no serviço de lembretes pelo WhatsApp,
+      conforme a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).</p>
+
+    <h2>1. Quais dados guardamos</h2>
+    <ul>
+      <li>Nome e telefone (WhatsApp).</li>
+      <li>Opcionalmente: data de nascimento, CPF, endereço e bairro.</li>
+      <li>Os medicamentos de uso contínuo que você compra conosco e as datas das compras.</li>
+      <li>A data em que você autorizou receber mensagens.</li>
+    </ul>
+
+    <h2>2. Para que usamos</h2>
+    <ul>
+      <li>Avisar, alguns dias antes, quando seu medicamento de uso contínuo deve estar acabando.</li>
+      <li>Enviar mensagens de aniversário e avisos de eventos e promoções da farmácia (como a Cesta da Fralda).</li>
+    </ul>
+    <p>Informações sobre medicamentos são <strong>dados sensíveis de saúde</strong>. Elas são usadas
+      <strong>somente</strong> para os lembretes e nunca para anunciar medicamentos.</p>
+
+    <h2>3. Seu consentimento</h2>
+    <p>Só enviamos mensagens se você autorizar no balcão. Registramos a data dessa autorização.
+      Você pode mudar de ideia a qualquer momento.</p>
+
+    <h2>4. Como parar de receber mensagens</h2>
+    <p>Responda <strong>SAIR</strong> em qualquer mensagem ou avise no balcão. Você será retirado(a)
+      de todos os envios.</p>
+
+    <h2>5. Quem tem acesso</h2>
+    <p>Apenas a equipe da farmácia, com login e senha pessoais. <strong>Não vendemos nem compartilhamos</strong>
+      seus dados com outras empresas. Os dados ficam guardados em servidor seguro (Supabase), com acesso restrito.</p>
+
+    <h2>6. Por quanto tempo</h2>
+    <p>Enquanto você for cliente e participar dos lembretes. Se pedir, apagamos seus dados.</p>
+
+    <h2>7. Seus direitos</h2>
+    <p>Você pode pedir para ver, corrigir ou apagar seus dados, ou cancelar a autorização, a qualquer momento,
+      pelo telefone <strong data-telefone></strong> ou no balcão da farmácia.</p>
+
+    <p class="suave pequeno">Última atualização: outubro de 2026.</p>
+    <p><a href="index.html">← Voltar</a></p>
+  </article>
+
+  <script type="module">
+    import { CONFIG } from './js/config.js';
+    document.querySelectorAll('[data-nome]').forEach((el) => (el.textContent = CONFIG.NOME_FARMACIA));
+    document.querySelectorAll('[data-cidade]').forEach((el) => (el.textContent = CONFIG.CIDADE));
+    document.querySelectorAll('[data-telefone]').forEach((el) => (el.textContent = CONFIG.TELEFONE_FARMACIA));
+    document.title = `Política de Privacidade · ${CONFIG.NOME_FARMACIA}`;
+  </script>
+</body>
+</html>

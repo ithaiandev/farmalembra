@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FarmaLembra</title>
+  <meta name="theme-color" content="#0b63c5">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/icone-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    try {
+      const t = localStorage.getItem('tema');
+      if (t === 'escuro' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.dataset.tema = 'escuro';
+      }
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="topo">
+    <a class="marca" href="#/painel">
+      <img src="img/logo.svg" alt="" data-logo>
+      <strong data-nome-farmacia>Farmamax</strong>
+    </a>
+    <span class="espaco"></span>
+    <span class="usuario" data-usuario></span>
+    <button type="button" class="btn-icone" data-tema title="Modo claro/escuro" aria-label="Alternar modo escuro">🌓</button>
+  </header>
+
+  <div class="layout">
+    <!-- Menu do computador -->
+    <nav class="menu-lateral" aria-label="Menu principal">
+      <a href="#/painel" data-rota="/painel">🏠 Painel</a>
+      <a href="#/balcao" data-rota="/balcao">🛒 Registrar compra</a>
+      <a href="#/clientes" data-rota="/clientes">👥 Clientes</a>
+      <a href="#/lembretes" data-rota="/lembretes">🔔 Lembretes</a>
+      <a href="#/campanhas" data-rota="/campanhas">📣 Campanhas</a>
+      <a href="#/modelos" data-rota="/modelos">📝 Modelos de mensagem</a>
+      <a href="#/relatorios" data-rota="/relatorios">📊 Relatórios</a>
+      <a href="#/configuracoes" data-rota="/configuracoes" data-so-admin>⚙️ Configurações</a>
+      <a href="#/importar" data-rota="/importar" data-so-admin>📥 Importar CSV</a>
+      <hr>
+      <a href="privacidade.html" target="_blank" rel="noopener">🔒 Política de Privacidade</a>
+      <button type="button" data-sair>🚪 Sair</button>
+    </nav>
+
+    <main id="conteudo"></main>
+  </div>
+
+  <!-- Menu do celular -->
+  <nav class="menu-inferior" aria-label="Menu">
+    <a href="#/painel" data-rota="/painel"><span class="ic">🏠</span>Painel</a>
+    <a href="#/balcao" data-rota="/balcao"><span class="ic">🛒</span>Compra</a>
+    <a href="#/clientes" data-rota="/clientes"><span class="ic">👥</span>Clientes</a>
+    <a href="#/lembretes" data-rota="/lembretes"><span class="ic">🔔</span>Lembretes</a>
+    <a href="#/mais" data-rota="/mais"><span class="ic">☰</span>Mais</a>
+  </nav>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <script type="module">
+    import { exigirLogin, sessao, ehAdmin, sair } from './js/auth.js';
+    import { iniciarRouter } from './js/router.js';
+    import { obterConfig } from './js/store.js';
+    import { CONFIG } from './js/config.js';
+    import { esc } from './js/utils.js';
+
+    // Modo escuro
+    document.querySelector('[data-tema]').addEventListener('click', () => {
+      const raiz = document.documentElement;
+      const escuro = raiz.dataset.tema !== 'escuro';
+      if (escuro) raiz.dataset.tema = 'escuro'; else delete raiz.dataset.tema;
+      try { localStorage.setItem('tema', escuro ? 'escuro' : 'claro'); } catch (e) {}
+    });
+
+    document.querySelectorAll('[data-sair]').forEach((b) => b.addEventListener('click', sair));
+
+    if (await exigirLogin()) {
+      document.querySelector('[data-usuario]').innerHTML =
+        `${esc(sessao.perfil.nome || sessao.user.email)}<br><small>${ehAdmin() ? 'Administrador' : 'Atendente'}</small>`;
+      if (!ehAdmin()) document.querySelectorAll('[data-so-admin]').forEach((el) => el.remove());
+
+      // Nome e logo da farmácia (vêm das Configurações)
+      obterConfig().then((cfg) => {
+        document.querySelector('[data-nome-farmacia]').textContent = cfg.nome_farmacia;
+        const logo = cfg.logo_url || CONFIG.LOGO_URL;
+        if (logo) document.querySelector('[data-logo]').src = logo;
+      }).catch(() => {});
+
+      iniciarRouter(document.getElementById('conteudo'));
+    }
+
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  </script>
+</body>
+</html>
