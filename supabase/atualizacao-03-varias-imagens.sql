@@ -30,4 +30,11 @@ $$;
 revoke execute on function public.imagens_campanha(uuid) from public;
 grant execute on function public.imagens_campanha(uuid) to anon, authenticated;
 
+-- 3) Permite trocar a "capa" da prévia do link no WhatsApp (arquivo capa.jpg)
+drop policy if exists campanhas_imagens_atualizar on storage.objects;
+create policy campanhas_imagens_atualizar on storage.objects
+  for update to authenticated
+  using (bucket_id = 'campanhas' and public.eh_usuario_ativo())
+  with check (bucket_id = 'campanhas' and public.eh_usuario_ativo());
+
 -- Fim ✅

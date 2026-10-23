@@ -1,6 +1,6 @@
 // =====================================================================
 // Imagens das campanhas: reduzir, enviar ao Supabase Storage, apagar
-// (a imagem é enviada junto com o texto pela API oficial: "Enviar pelo sistema").
+// e atualizar a "capa" da prévia do link no WhatsApp.
 // =====================================================================
 import { supabase } from './supabase.js';
 
@@ -30,10 +30,10 @@ export async function prepararImagem(arquivo) {
   }
 }
 
-/** Reduz para no máximo 1600 px e converte para JPEG (fundo branco no lugar de transparência) */
-async function reduzir(arquivo) {
+/** Reduz (padrão: até 1600 px) e converte para JPEG (fundo branco no lugar de transparência) */
+async function reduzir(arquivo, ladoMaximo = LADO_MAXIMO, qualidade = 0.85) {
   const bmp = await createImageBitmap(arquivo);
-  const escala = Math.min(1, LADO_MAXIMO / Math.max(bmp.width, bmp.height));
+  const escala = Math.min(1, ladoMaximo / Math.max(bmp.width, bmp.height));
   const w = Math.round(bmp.width * escala);
   const h = Math.round(bmp.height * escala);
 
@@ -46,7 +46,7 @@ async function reduzir(arquivo) {
   ctx.drawImage(bmp, 0, 0, w, h);
   bmp.close?.();
 
-  const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/jpeg', 0.85));
+  const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/jpeg', qualidade));
   if (!blob) throw new Error('Não foi possível processar a imagem.');
   return new File([blob], 'promocao.jpg', { type: 'image/jpeg' });
 }
@@ -69,6 +69,29 @@ export async function removerImagem(url) {
   if (i < 0) return;
   const caminho = decodeURIComponent(url.slice(i + marca.length));
   await supabase.storage.from(PASTA).remove([caminho]);
+}
+
+/**
+ * Atualiza a "capa" usada na prévia do link no WhatsApp (arquivo campanhas/capa.jpg).
+ * A página promo.html aponta para essa capa (og:image). O WhatsApp só mostra
+ * prévia de imagens pequenas, então a capa é reduzida para 800 px.
+ */
+export const ARQUIVO_CAPA = 'capa.jpg';
+
+export async function atualizarCapa(urlImagem) {
+  const original = await baixarComoArquivo(urlImagem);
+  let capa;
+  try {
+    const limite = new Promise((_, falha) => setTimeout(() => falha(new Error('tempo')), 10000));
+    capa = await Promise.race([reduzir(original, 800, 0.8), limite]);
+  } catch {
+    capa = original.size <= 600 * 1024 ? original : null; // se não reduziu, só usa se já for leve
+  }
+  if (!capa) throw new Error('Imagem grande demais para a prévia.');
+  const { error } = await supabase.storage.from(PASTA).upload(ARQUIVO_CAPA, capa, {
+    contentType: capa.type || 'image/jpeg', cacheControl: '60', upsert: true,
+  });
+  if (error) throw error;
 }
 
 /** Baixa a imagem do link e devolve como File (para compartilhar) */

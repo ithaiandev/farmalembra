@@ -964,4 +964,11 @@ create policy campanhas_imagens_apagar on storage.objects
   for delete to authenticated
   using (bucket_id = 'campanhas' and public.eh_usuario_ativo());
 
+-- Troca da "capa" da prévia do link no WhatsApp (capa.jpg)
+drop policy if exists campanhas_imagens_atualizar on storage.objects;
+create policy campanhas_imagens_atualizar on storage.objects
+  for update to authenticated
+  using (bucket_id = 'campanhas' and public.eh_usuario_ativo())
+  with check (bucket_id = 'campanhas' and public.eh_usuario_ativo());
+
 -- Fim do arquivo ✅

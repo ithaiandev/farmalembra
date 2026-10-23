@@ -20,7 +20,7 @@ import { obterModelos } from '../store.js';
 import { mensagemLivre, previaMensagem } from '../mensagens.js';
 import { abrirFila } from '../fila.js';
 import {
-  prepararImagem, enviarImagem, removerImagem, baixarComoArquivo,
+  prepararImagem, enviarImagem, removerImagem, baixarComoArquivo, atualizarCapa,
 } from '../imagens.js';
 
 const MAX_IMAGENS = 10;
@@ -510,6 +510,15 @@ export async function render(el, { params }) {
     imagensSalvas.filter((u) => !imagens.includes(u)).forEach((u) => removerImagem(u).catch(() => {}));
     imagensSalvas = [...imagens];
     camp = { ...camp, ...salva };
+    // Prévia do link no WhatsApp: a 1ª imagem vira a capa da página de fotos
+    if (imagens.length && porLink) {
+      try {
+        await atualizarCapa(imagens[0]);
+      } catch (erro) {
+        console.warn('Capa da prévia não atualizada:', erro);
+        toast('Campanha salva, mas a prévia da imagem no WhatsApp não foi atualizada (rode a atualização 03).', 'info', 6000);
+      }
+    }
     if (!silencioso) {
       toast('Campanha salva. ✅');
       if (nova) ir(`/campanhas/${salva.id}`);

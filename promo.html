@@ -5,8 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Promoção</title>
   <meta name="theme-color" content="#0b63c5">
+  <!--
+    Prévia do link no WhatsApp: o WhatsApp lê estas linhas (sem rodar JavaScript).
+    A "capa" (og:image) é a 1ª imagem da última campanha salva — o sistema troca
+    o arquivo capa.jpg sozinho ao salvar a campanha.
+    Para outra farmácia: troque o endereço do Supabase em og:image.
+  -->
+  <meta property="og:type" content="website">
   <meta property="og:title" content="📸 Fotos da promoção">
   <meta property="og:description" content="Toque para ver as imagens da promoção da farmácia.">
+  <meta property="og:image" content="https://hydqyhahyopiykcvgcvf.supabase.co/storage/v1/object/public/campanhas/capa.jpg">
+  <meta property="og:image:alt" content="Imagem da promoção">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
   <style>
