@@ -523,6 +523,7 @@ dialog.modal::backdrop { background: rgba(10, 20, 35, .55); }
 .passos li { margin-bottom: 14px; }
 .passos li small { display: block; color: var(--texto-suave); margin-top: 4px; }
 .passos .btn { margin-top: 2px; }
+.escolha-envio { display: grid; gap: 10px; margin-top: 14px; }
 .separador { border: 0; border-top: 1px solid var(--borda); margin: 18px 0; }
 .spinner.pequeno.escuro { border-color: var(--borda); border-top-color: var(--azul); vertical-align: -3px; }
 

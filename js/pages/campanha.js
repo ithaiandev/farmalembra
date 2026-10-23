@@ -10,7 +10,7 @@ import { ehAdmin } from '../auth.js';
 import { ir, recarregar } from '../router.js';
 import {
   toast, mostrarErro, confirmar, comBotaoOcupado, htmlVazio, htmlCarregando, badgeStatus,
-  htmlBotoesVariaveis, ligarBotoesVariaveis,
+  htmlBotoesVariaveis, ligarBotoesVariaveis, abrirModal,
 } from '../ui.js';
 import {
   esc, debounce, formatarDataHora, formatarTelefone, hojeISO, TAGS_PADRAO, lerFormulario,
@@ -307,6 +307,7 @@ export async function render(el, { params }) {
     const faltam = selecionados().filter((c) => !jaRecebeu.has(c.id)).length;
     contagemEl.innerHTML = `👥 <strong>${sel}</strong> de ${total} cliente(s) selecionado(s)`
       + (jaRecebeu.size ? ` · faltam receber: <strong>${faltam}</strong>` : '')
+      + (jaRecebeu.size && !faltam && sel ? '<br>✅ Todos já receberam. Editou o texto ou a imagem? Salve e use os botões de envio para mandar de novo.' : '')
       + (sel > LIMITE_TRANSMISSAO ? `<br>⚠️ Mais de ${LIMITE_TRANSMISSAO}: no WhatsApp, divida em mais de uma lista de transmissão.` : '');
   };
 
@@ -462,6 +463,55 @@ export async function render(el, { params }) {
   });
 
   // ---- Envio ------------------------------------------------------------------
+
+  /**
+   * Decide para quem enviar. Se ninguém recebeu ainda, envia para todos os selecionados.
+   * Se alguém já recebeu (ex.: você editou o texto/imagem), pergunta:
+   * "só quem falta" ou "todos de novo". Resolve { lista, reenvio } ou null (cancelou).
+   */
+  function escolherDestino({ verbo = 'Enviar' } = {}) {
+    const sel = selecionados();
+    const faltam = sel.filter((c) => !jaRecebeu.has(c.id));
+    if (!sel.length) {
+      toast('Nenhum contato selecionado.', 'erro');
+      return Promise.resolve(null);
+    }
+    if (faltam.length === sel.length) return Promise.resolve({ lista: sel, reenvio: false, novo: true });
+
+    const ja = sel.length - faltam.length;
+    return abrirModal({
+      titulo: 'Alguns já receberam',
+      html: `
+        <p><strong>${ja}</strong> de ${sel.length} cliente(s) selecionado(s) já receberam esta campanha.
+          Se você mudou o texto ou a imagem, pode ${verbo.toLowerCase()} de novo.</p>
+        <div class="escolha-envio">
+          ${faltam.length ? `<button type="button" class="btn btn-primario btn-grande" data-faltam>
+            ${verbo} só para quem ainda não recebeu (${faltam.length})</button>` : ''}
+          <button type="button" class="btn btn-whats btn-grande" data-todos>
+            🔄 ${verbo} de novo para todos (${sel.length})</button>
+          <button type="button" class="btn btn-sec" data-cancelar>Cancelar</button>
+        </div>`,
+      aoAbrir(dlg, fechar) {
+        dlg.querySelector('[data-faltam]')?.addEventListener('click', () => fechar({ lista: faltam, reenvio: false }));
+        dlg.querySelector('[data-todos]').addEventListener('click', () => fechar({ lista: sel, reenvio: true }));
+        dlg.querySelector('[data-cancelar]').addEventListener('click', () => fechar(null));
+      },
+    }).then((r) => r ?? null);
+  }
+
+  /** Grava (ou regrava, no reenvio) o envio com a data de agora */
+  async function registrarEnvios(clientes) {
+    const agora = new Date().toISOString();
+    for (let i = 0; i < clientes.length; i += 200) {
+      const { error } = await supabase.from('campanha_envios').upsert(
+        clientes.slice(i, i + 200).map((c) => ({ campanha_id: camp.id, cliente_id: c.id, status: 'enviado', enviado_em: agora })),
+        { onConflict: 'campanha_id,cliente_id' },
+      );
+      if (error) throw error;
+      clientes.slice(i, i + 200).forEach((c) => jaRecebeu.add(c.id));
+    }
+  }
+
   async function marcarStatus(status) {
     const { error } = await supabase.from('campanhas').update({ status }).eq('id', camp.id);
     if (error) mostrarErro(error);
@@ -519,25 +569,25 @@ export async function render(el, { params }) {
 
   $('[data-marcar-enviada]')?.addEventListener('click', async (e) => {
     const botao = e.currentTarget; // guardar antes do "await" (depois o navegador zera)
-    const faltam = selecionados().filter((c) => !jaRecebeu.has(c.id));
-    if (!faltam.length) return toast('Todos os selecionados já estão marcados como enviados. 👍', 'info');
-    const ok = await confirmar({
-      titulo: 'Registrar envio',
-      mensagem: `Confirma que enviou esta campanha pela lista de transmissão para os ${faltam.length} cliente(s) selecionado(s) que ainda não tinham recebido?`,
-      botao: 'Sim, já enviei',
-    });
-    if (!ok) return;
+    const escolha = await escolherDestino({ verbo: 'Registrar' });
+    if (!escolha) return;
+    if (escolha.novo) {
+      const ok = await confirmar({
+        titulo: 'Registrar envio',
+        mensagem: `Confirma que enviou esta campanha pela lista de transmissão para os ${escolha.lista.length} cliente(s) selecionado(s)?`,
+        botao: 'Sim, já enviei',
+      });
+      if (!ok) return;
+    }
     await comBotaoOcupado(botao, async () => {
       if (!(await salvar(true))) return;
-      for (let i = 0; i < faltam.length; i += 200) {
-        const { error } = await supabase.from('campanha_envios').upsert(
-          faltam.slice(i, i + 200).map((c) => ({ campanha_id: camp.id, cliente_id: c.id, status: 'enviado' })),
-          { onConflict: 'campanha_id,cliente_id' },
-        );
-        if (error) return mostrarErro(error);
+      try {
+        await registrarEnvios(escolha.lista);
+      } catch (erro) {
+        return mostrarErro(erro);
       }
       await marcarStatus('concluida');
-      toast('Envio registrado! 🎉');
+      toast(escolha.reenvio ? 'Reenvio registrado! 🎉' : 'Envio registrado! 🎉');
       recarregar();
     }, 'Registrando...');
   });
@@ -547,23 +597,24 @@ export async function render(el, { params }) {
     const salva = await comBotaoOcupado(e.currentTarget, () => salvar(true), 'Salvando...');
     if (!salva) return;
     const sel = selecionados();
-    const faltam = sel.filter((c) => !jaRecebeu.has(c.id));
-    if (!faltam.length) {
-      return toast(sel.length ? 'Todos os selecionados já receberam. 👍' : 'Nenhum contato selecionado.', 'info');
+    const escolha = await escolherDestino({ verbo: 'Enviar' });
+    if (!escolha) return;
+    const lista = escolha.lista;
+    if (escolha.novo) {
+      const ok = await confirmar({
+        titulo: 'Enviar um por um',
+        mensagem: `Vamos abrir o WhatsApp de ${lista.length} cliente(s), um de cada vez. Pode parar quando quiser e continuar depois.`,
+        botao: 'Começar',
+      });
+      if (!ok) return;
     }
-    const ok = await confirmar({
-      titulo: 'Enviar um por um',
-      mensagem: `Vamos abrir o WhatsApp de ${faltam.length} cliente(s), um de cada vez. Pode parar quando quiser e continuar depois.`,
-      botao: 'Começar',
-    });
-    if (!ok) return;
 
     await marcarStatus('enviando');
     const placar = await abrirFila({
-      titulo: camp.titulo,
-      itens: faltam,
-      jaEnviados: sel.length - faltam.length,
-      total: sel.length,
+      titulo: escolha.reenvio ? `${camp.titulo} (reenvio)` : camp.titulo,
+      itens: lista,
+      jaEnviados: escolha.reenvio ? 0 : sel.length - lista.length,
+      total: escolha.reenvio ? lista.length : sel.length,
       arquivo: imagemUrl ? arquivoImagem : null, // a foto vai como arquivo (celular: Compartilhar; PC: colar)
       linkImagem: imagemUrl,                     // só usado se a foto não puder ir como arquivo
       montar: async (c) => ({
@@ -571,14 +622,9 @@ export async function render(el, { params }) {
         telefone: c.telefone,
         mensagem: await mensagemLivre(camp.mensagem, c),
       }),
-      aoEnviar: async (c) => {
-        const { error } = await supabase.from('campanha_envios')
-          .upsert({ campanha_id: camp.id, cliente_id: c.id, status: 'enviado' }, { onConflict: 'campanha_id,cliente_id' });
-        if (error) throw error;
-        jaRecebeu.add(c.id);
-      },
+      aoEnviar: (c) => registrarEnvios([c]),
     });
-    if (placar.enviados >= faltam.length) {
+    if (placar.enviados >= lista.length) {
       await marcarStatus('concluida');
       toast('Campanha concluída! 🎉');
     }
