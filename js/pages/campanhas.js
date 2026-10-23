@@ -33,6 +33,6 @@ export async function render(el) {
             ${badgeStatus(c.status)}
           </a>
         </li>`;
-      }).join('')}</ul>` : htmlVazio('Nenhuma campanha ainda. Crie a primeira — ex.: Cesta da Fralda!', '📣')}
+      }).join('')}</ul>` : htmlVazio('Nenhuma campanha ainda. Crie a primeira — ex.: Sexta-feira da Fralda!', '📣')}
     </div>`;
 }

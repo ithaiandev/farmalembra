@@ -856,12 +856,14 @@ from (values
   ('boas_vindas', 'Boas-vindas',
    'Olá, {nome}! 😊 Seja bem-vindo(a) à {farmacia}! A partir de agora vamos te avisar quando seu medicamento de uso contínuo estiver perto de acabar. Estamos em {endereco}, {horario}. Dúvidas? Chame aqui ou ligue {telefone_farmacia}. Para não receber mensagens, responda SAIR.',
    true),
-  ('campanha', 'Cesta da Fralda / Evento',
-   'Oi, {nome}! 👶 Chegou a *Cesta da Fralda* da {farmacia}! Fraldas, lenços e cuidados para o bebê com condições especiais nesta semana. Venha conferir: {endereco}, {horario}. Para não receber mais mensagens, responda SAIR.',
+  ('campanha', 'Sexta-feira da Fralda',
+   'Oi, {nome}! 👶 Hoje é *Sexta-feira da Fralda* na {farmacia}! Fraldas, lenços e cuidados para o bebê com condições especiais. Venha conferir: {endereco}, {horario}. Para não receber mais mensagens, responda SAIR.',
    true)
 ) as v(tipo, titulo, texto, padrao)
+-- Só cria o modelo se ainda não existir nenhum daquele tipo
+-- (assim, rodar o arquivo de novo não duplica nem desfaz o que a farmácia editou)
 where not exists (
-  select 1 from public.modelos_mensagem mm where mm.tipo = v.tipo and mm.titulo = v.titulo
+  select 1 from public.modelos_mensagem mm where mm.tipo = v.tipo
 );
 
 

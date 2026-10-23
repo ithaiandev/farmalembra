@@ -58,7 +58,7 @@ export async function render(el, { params }) {
     <div class="grade-dupla">
       <form class="card" data-form novalidate>
         <label class="campo"><span>Título (só aparece para a equipe) *</span>
-          <input name="titulo" required value="${esc(camp.titulo)}" placeholder="Ex.: Cesta da Fralda — novembro"></label>
+          <input name="titulo" required value="${esc(camp.titulo)}" placeholder="Ex.: Sexta-feira da Fralda — novembro"></label>
 
         ${modelos.length ? `<label class="campo"><span>Começar de um modelo</span>
           <select data-modelo><option value="">— escolher —</option>
