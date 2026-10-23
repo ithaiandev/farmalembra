@@ -54,6 +54,8 @@
       <!-- Definir nova senha (link do e-mail de convite ou recuperação) -->
       <form data-tela="nova-senha" class="oculto" novalidate>
         <p><strong>Crie sua senha</strong> para acessar o sistema.</p>
+        <!-- campo escondido: ajuda o celular/navegador a salvar a senha no e-mail certo -->
+        <input type="email" name="usuario" autocomplete="username" hidden data-email-oculto>
         <label class="campo"><span>Nova senha (mínimo 8 caracteres)</span>
           <input type="password" name="senha" autocomplete="new-password" minlength="8" required></label>
         <label class="campo"><span>Repita a senha</span>
@@ -106,6 +108,7 @@
     });
 
     const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.email) $('[data-email-oculto]').value = session.user.email;
     if ((precisaSenha || recuperando) && session) mostrar('nova-senha');
     else if (session && !params.get('motivo')) location.replace('app.html');
 

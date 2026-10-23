@@ -3,7 +3,7 @@
 // Estratégia: sempre busca a versão nova na internet; se estiver sem
 // internet, usa a cópia guardada. (Os dados do Supabase nunca são guardados.)
 // =====================================================================
-const CACHE = 'farmalembra-v5';
+const CACHE = 'farmalembra-v6';
 
 const ARQUIVOS = [
   './', 'index.html', 'app.html', 'privacidade.html', 'manifest.json',

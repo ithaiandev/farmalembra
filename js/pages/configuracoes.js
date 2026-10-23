@@ -2,7 +2,7 @@
 import { supabase } from '../supabase.js';
 import { sessao } from '../auth.js';
 import { recarregar } from '../router.js';
-import { toast, mostrarErro, confirmar, comBotaoOcupado } from '../ui.js';
+import { toast, mostrarErro, confirmar, comBotaoOcupado, abrirModal } from '../ui.js';
 import { esc, lerFormulario, gerarCSV, baixarArquivo, hojeISO, formatarDataHora } from '../utils.js';
 import { obterConfig, limparCache } from '../store.js';
 
@@ -51,7 +51,8 @@ export async function render(el) {
       <ul class="lista">${(perfis || []).map((p) => `
         <li class="item" data-perfil="${p.id}">
           <div class="item-principal">
-            <div class="item-titulo">${esc(p.nome || p.email)} ${p.id === sessao.user.id ? '<span class="badge badge-azul">você</span>' : ''}</div>
+            <div class="item-titulo">${esc(p.nome || p.email)} ${p.id === sessao.user.id ? '<span class="badge badge-azul">você</span>' : ''}
+              <button type="button" class="btn btn-link btn-pequeno" data-renomear title="Mudar o nome que aparece no sistema">✏️ nome</button></div>
             <div class="item-sub">${esc(p.email)} · desde ${formatarDataHora(p.criado_em)}</div>
           </div>
           <div class="item-acoes">
@@ -121,6 +122,42 @@ export async function render(el) {
       toast('Papel atualizado.');
       p.papel = e.target.value;
     });
+    li.querySelector('[data-renomear]').addEventListener('click', async () => {
+      const novo = await abrirModal({
+        titulo: 'Nome do usuário',
+        html: `
+          <form data-form novalidate>
+            <label class="campo"><span>Nome que aparece no sistema</span>
+              <input name="nome" required maxlength="60" value="${esc(p.nome)}" autocomplete="name"></label>
+            <div class="acoes-modal">
+              <button type="button" class="btn btn-sec" data-cancelar>Cancelar</button>
+              <button type="submit" class="btn btn-primario">Salvar</button>
+            </div>
+          </form>`,
+        aoAbrir(dlg, fechar) {
+          const f = dlg.querySelector('[data-form]');
+          f.nome.select();
+          dlg.querySelector('[data-cancelar]').addEventListener('click', () => fechar());
+          f.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nome = f.nome.value.trim();
+            if (!nome) return toast('Digite um nome.', 'erro');
+            fechar(nome);
+          });
+        },
+      });
+      if (!novo || novo === p.nome) return;
+      const { error: erro } = await supabase.from('perfis').update({ nome: novo }).eq('id', p.id);
+      if (erro) return mostrarErro(erro);
+      toast('Nome atualizado.');
+      if (p.id === sessao.user.id) {
+        sessao.perfil.nome = novo;
+        const topo = document.querySelector('[data-usuario]');
+        if (topo) topo.innerHTML = `${esc(novo)}<br><small>Administrador</small>`;
+      }
+      recarregar();
+    });
+
     li.querySelector('[data-ativo]')?.addEventListener('click', async () => {
       if (p.ativo && !(await confirmar({
         titulo: 'Desativar usuário', mensagem: `${p.nome || p.email} não vai mais conseguir acessar o sistema.`,
