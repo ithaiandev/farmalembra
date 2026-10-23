@@ -173,6 +173,8 @@ create table if not exists public.campanhas (
   filtro_aniversariantes_mes boolean not null default false,
   data_envio                date default public.hoje(),
   status                    text not null default 'rascunho' check (status in ('rascunho', 'enviando', 'concluida')),
+  imagens                   text[] not null default '{}',  -- links das imagens (imagem_url = 1ª)
+  imagens_por_link          boolean not null default true, -- true: link na mensagem; false: anexo manual
   clientes_excluidos        uuid[] not null default '{}',  -- desmarcados à mão
   clientes_incluidos        uuid[] not null default '{}',  -- adicionados à mão
   criado_por                uuid default auth.uid() references public.perfis(id) on delete set null,
@@ -182,6 +184,8 @@ create table if not exists public.campanhas (
 -- (para bancos criados antes dessas colunas existirem)
 alter table public.campanhas add column if not exists clientes_excluidos uuid[] not null default '{}';
 alter table public.campanhas add column if not exists clientes_incluidos uuid[] not null default '{}';
+alter table public.campanhas add column if not exists imagens text[] not null default '{}';
+alter table public.campanhas add column if not exists imagens_por_link boolean not null default true;
 
 -- 2.8 Envios de cada campanha (um por cliente)
 create table if not exists public.campanha_envios (
@@ -639,6 +643,17 @@ as $$
   from public.configuracoes where id = 1
 $$;
 
+-- Página pública de fotos da promoção (link enviado no WhatsApp):
+-- devolve SÓ as imagens da campanha pedida, mais nada.
+create or replace function public.imagens_campanha(p_id uuid)
+returns json
+language sql stable security definer set search_path = public
+as $$
+  select json_build_object('imagens', imagens)
+  from public.campanhas
+  where id = p_id
+$$;
+
 -- Marca como "sem_retorno" os lembretes enviados há mais de X dias sem recompra.
 -- Roda todo dia pelo pg_cron e também quando o painel é aberto.
 create or replace function public.atualizar_status_lembretes()
@@ -845,6 +860,7 @@ to authenticated;
 
 -- Única coisa que o visitante sem login pode ler: nome/telefone/endereço da farmácia
 grant execute on function public.dados_publicos_farmacia() to anon, authenticated;
+grant execute on function public.imagens_campanha(uuid) to anon, authenticated;
 
 
 -- ---------------------------------------------------------------------

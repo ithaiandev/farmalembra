@@ -510,6 +510,22 @@ dialog.modal::backdrop { background: rgba(10, 20, 35, .55); }
   display: block; max-width: 100%; max-height: 320px; margin: 0 auto 12px;
   border-radius: var(--raio-p); border: 1px solid var(--borda); object-fit: contain; background: var(--superficie-2);
 }
+/* Várias imagens da campanha */
+.galeria { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.galeria:empty { display: none; }
+.galeria-item { position: relative; margin: 0; aspect-ratio: 1; border-radius: var(--raio-p); overflow: hidden;
+  border: 1px solid var(--borda); background: var(--superficie-2); }
+.galeria-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.galeria-remover {
+  position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; border-radius: 50%;
+  border: 0; background: rgba(0, 0, 0, .65); color: #fff; font-size: .9rem; cursor: pointer;
+}
+.galeria-remover:hover { background: var(--vermelho); }
+.modo-imagem { margin-top: 14px; }
+.campo-titulo { display: block; font-weight: 600; font-size: .9rem; margin-bottom: 6px; }
+.balao-imagens { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-bottom: 6px; }
+.balao-imagens img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; display: block; }
+.balao-imagens img:only-child { grid-column: span 2; aspect-ratio: auto; max-height: 300px; }
 .balao-imagem { display: block; width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; }
 .lista-contatos {
   max-height: 380px; overflow-y: auto; border: 1px solid var(--borda); border-radius: var(--raio-p);

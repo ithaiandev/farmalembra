@@ -1,6 +1,6 @@
 // =====================================================================
 // Imagens das campanhas: reduzir, enviar ao Supabase Storage, apagar
-// e compartilhar (imagem + texto) pelo menu do celular.
+// (a imagem é enviada junto com o texto pela API oficial: "Enviar pelo sistema").
 // =====================================================================
 import { supabase } from './supabase.js';
 
@@ -79,59 +79,3 @@ export async function baixarComoArquivo(url) {
   return new File([blob], 'promocao.jpg', { type: blob.type || 'image/jpeg' });
 }
 
-/**
- * Copia a imagem para a área de transferência (para colar com Ctrl+V no WhatsApp Web).
- * IMPORTANTE: chame direto no clique. O navegador só aceita PNG ao copiar imagem.
- */
-export async function copiarImagem(arquivo) {
-  if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-    throw new Error('Este navegador não deixa copiar imagens. Use "Baixar imagem" e anexe no WhatsApp.');
-  }
-  // A conversão é passada como "promessa" para não perder a permissão do clique
-  const png = paraPng(arquivo);
-  await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
-}
-
-async function paraPng(arquivo) {
-  if (arquivo.type === 'image/png') return arquivo;
-  const bmp = await createImageBitmap(arquivo);
-  const canvas = document.createElement('canvas');
-  canvas.width = bmp.width;
-  canvas.height = bmp.height;
-  canvas.getContext('2d').drawImage(bmp, 0, 0);
-  bmp.close?.();
-  const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/png'));
-  if (!blob) throw new Error('Não foi possível copiar a imagem.');
-  return blob;
-}
-
-/** O navegador consegue compartilhar arquivos (celular)? */
-export function podeCompartilharArquivo(arquivo) {
-  try {
-    return Boolean(arquivo && navigator.canShare && navigator.canShare({ files: [arquivo] }));
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Abre o menu "Compartilhar" do celular com imagem + texto.
- * IMPORTANTE: chame direto no clique (o arquivo já deve estar carregado).
- * Devolve: 'ok' | 'cancelado' | 'sem-suporte' | 'so-texto'
- */
-export async function compartilhar({ texto, arquivo }) {
-  try {
-    if (podeCompartilharArquivo(arquivo)) {
-      await navigator.share({ files: [arquivo], text: texto });
-      return 'ok';
-    }
-    if (navigator.share) {
-      await navigator.share({ text: texto });
-      return arquivo ? 'so-texto' : 'ok';
-    }
-    return 'sem-suporte';
-  } catch (e) {
-    if (e?.name === 'AbortError') return 'cancelado';
-    throw e;
-  }
-}

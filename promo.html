@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Promoção</title>
+  <meta name="theme-color" content="#0b63c5">
+  <meta property="og:title" content="📸 Fotos da promoção">
+  <meta property="og:description" content="Toque para ver as imagens da promoção da farmácia.">
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Página pública: só as fotos da promoção (sem login, sem dados de clientes) */
+    .promo-topo {
+      background: linear-gradient(110deg, #0b63c5 0%, #0a7aa0 60%, #0a8f6a 100%);
+      color: #fff; text-align: center; padding: 22px 16px 18px;
+    }
+    .promo-topo h1 { margin: 0; font-size: 1.5rem; }
+    .promo-topo p { margin: 4px 0 0; opacity: .9; }
+    .promo { max-width: 640px; margin: 0 auto; padding: 16px 16px 40px; }
+    .promo-fotos { display: grid; gap: 14px; }
+    .promo-fotos img {
+      display: block; width: 100%; height: auto; border-radius: var(--raio);
+      box-shadow: var(--sombra); background: var(--superficie-2);
+    }
+    .promo-info { text-align: center; margin-top: 20px; }
+    .promo-info .btn { margin-top: 10px; }
+    .promo-rodape { text-align: center; margin-top: 26px; font-size: .8rem; color: var(--texto-suave); }
+  </style>
+  <script>
+    try {
+      if (matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.tema = 'escuro';
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="promo-topo">
+    <h1 data-nome>Promoção</h1>
+    <p>📸 Confira as fotos da promoção</p>
+  </header>
+
+  <main class="promo">
+    <div class="promo-fotos" data-fotos><div class="carregando"><span class="spinner"></span>Carregando fotos...</div></div>
+
+    <div class="promo-info oculto" data-info>
+      <p data-endereco></p>
+      <a class="btn btn-whats btn-grande oculto" data-whats target="_blank" rel="noopener">💬 Falar com a farmácia</a>
+    </div>
+
+    <p class="promo-rodape">Promoção válida enquanto durarem os estoques. · FarmaLembra</p>
+  </main>
+
+  <script type="module">
+    import { supabase } from './js/supabase.js';
+    import { dadosPublicosFarmacia } from './js/store.js';
+    import { esc, linkWhatsApp, normalizarTelefone } from './js/utils.js';
+
+    const $ = (s) => document.querySelector(s);
+    const id = new URLSearchParams(location.search).get('c') || '';
+    const fotos = $('[data-fotos]');
+
+    // Nome, endereço e telefone da farmácia
+    dadosPublicosFarmacia().then((f) => {
+      if (!f) return;
+      if (f.nome) {
+        $('[data-nome]').textContent = f.nome;
+        document.title = `Promoção · ${f.nome}`;
+      }
+      if (f.endereco) $('[data-endereco]').textContent = `📍 ${f.endereco}`;
+      const tel = normalizarTelefone(f.telefone || '');
+      if (tel) {
+        const b = $('[data-whats]');
+        b.href = linkWhatsApp(tel, 'Olá! Vi as fotos da promoção e quero saber mais. 😊');
+        b.classList.remove('oculto');
+      }
+      $('[data-info]').classList.remove('oculto');
+    });
+
+    // Fotos da campanha
+    const valido = /^[0-9a-f-]{36}$/i.test(id);
+    const { data, error } = valido
+      ? await supabase.rpc('imagens_campanha', { p_id: id })
+      : { data: null, error: null };
+    const lista = (data?.imagens || []).filter((u) => /^https?:\/\//.test(u)); // só links de verdade
+
+    if (error || !lista.length) {
+      fotos.innerHTML = `<div class="vazio"><div class="vazio-icone">🖼️</div>
+        <p>${valido && !error ? 'Esta promoção não tem fotos.' : 'Promoção não encontrada ou já encerrada.'}</p></div>`;
+    } else {
+      fotos.innerHTML = lista.map((u, i) =>
+        `<img src="${esc(u)}" alt="Foto ${i + 1} da promoção" loading="${i ? 'lazy' : 'eager'}">`).join('');
+    }
+  </script>
+</body>
+</html>

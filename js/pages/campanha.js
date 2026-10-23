@@ -20,8 +20,21 @@ import { obterModelos } from '../store.js';
 import { mensagemLivre, previaMensagem } from '../mensagens.js';
 import { abrirFila } from '../fila.js';
 import {
-  prepararImagem, enviarImagem, removerImagem, baixarComoArquivo, podeCompartilharArquivo, compartilhar,
+  prepararImagem, enviarImagem, removerImagem, baixarComoArquivo,
 } from '../imagens.js';
+
+const MAX_IMAGENS = 10;
+
+/** Link da página pública com as fotos da campanha (promo.html) */
+function linkFotos(campanhaId) {
+  return new URL(`promo.html?c=${campanhaId || 'codigo-da-campanha'}`, location.href).href;
+}
+
+/** Aviso + link que vai no fim da mensagem (só no modo "por link") */
+function rodapeImagens(qtd, campanhaId) {
+  if (!qtd) return '';
+  return `\n\n📸 Toque no link para ver ${qtd > 1 ? 'as fotos' : 'a foto'} da promoção:\n${linkFotos(campanhaId)}`;
+}
 
 const VARS_CAMPANHA = ['{nome}', '{farmacia}', '{telefone_farmacia}', '{endereco}', '{horario}'];
 const LIMITE_TRANSMISSAO = 256; // máximo de contatos por lista de transmissão no WhatsApp
@@ -95,9 +108,13 @@ export async function render(el, { params }) {
   const incluidos = new Set(camp.clientes_incluidos || []);
   let base = [];                 // clientes do filtro escolhido
   let extras = [];               // clientes adicionados à mão
-  let imagemUrl = camp.imagem_url || null;
-  let arquivoImagem = null;      // a imagem já baixada, pronta para compartilhar
+  // Imagens: lista nova (várias) ou a antiga (uma só)
+  let imagens = Array.isArray(camp.imagens) && camp.imagens.length
+    ? [...camp.imagens] : (camp.imagem_url ? [camp.imagem_url] : []);
+  let imagensSalvas = [...imagens];          // as que já estão gravadas na campanha
+  let porLink = camp.imagens_por_link !== false; // true = link na mensagem; false = anexo manual
   let textoTodos = '';           // texto da lista de transmissão (sem nome)
+  const rodape = () => (porLink ? rodapeImagens(imagens.length, camp.id) : '');
 
   const publicoInicial = camp.filtro_aniversariantes_mes ? 'aniversariantes' : camp.filtro_tags.length ? 'tags' : 'todos';
 
@@ -127,15 +144,24 @@ export async function render(el, { params }) {
         </div>
 
         <div class="card">
-          <h2>🖼️ Imagem (opcional)</h2>
-          <img class="imagem-campanha oculto" data-imagem-previa alt="Imagem da campanha">
+          <h2>🖼️ Imagens (opcional)</h2>
+          <div class="galeria" data-galeria></div>
           <div class="item-acoes">
-            <label class="btn btn-sec" tabindex="0">📷 <span data-rotulo-imagem>Escolher imagem</span>
-              <input type="file" accept="image/jpeg,image/png,image/webp" data-arquivo hidden></label>
-            <button type="button" class="btn btn-link oculto" data-remover-imagem>Remover imagem</button>
+            <label class="btn btn-sec" tabindex="0">📷 Adicionar imagens
+              <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-arquivo hidden></label>
           </div>
-          <p class="suave pequeno" style="margin-top:8px" data-status-imagem>JPG ou PNG. A imagem é reduzida automaticamente.
-            Use só fotos de produtos e eventos — nunca receitas ou fotos de clientes.</p>
+          <p class="suave pequeno" style="margin-top:8px" data-status-imagem>Até ${MAX_IMAGENS} imagens (pode escolher várias de uma vez).
+            São reduzidas automaticamente. Use só fotos de produtos e eventos — nunca receitas ou fotos de clientes.</p>
+
+          <div class="modo-imagem oculto" data-modo-imagem>
+            <span class="campo-titulo">Como as imagens vão para o cliente?</span>
+            <label class="checkbox"><input type="radio" name="imagens_por_link" value="link" ${porLink ? 'checked' : ''}>
+              <span>🔗 Por link <small>A mensagem termina com "📸 Toque no link para ver as fotos da promoção"
+              e o link abre uma página com todas as imagens.</small></span></label>
+            <label class="checkbox"><input type="radio" name="imagens_por_link" value="manual" ${porLink ? '' : 'checked'}>
+              <span>✋ Eu anexo manualmente <small>A mensagem vai sem link. Baixe as imagens e anexe você mesmo no WhatsApp (📎).</small></span></label>
+            <button type="button" class="btn btn-sec oculto" data-baixar-imagens>⬇ Baixar imagens</button>
+          </div>
         </div>
 
         <div class="card">
@@ -176,7 +202,7 @@ export async function render(el, { params }) {
         <div class="card">
           <h2>👀 Como o cliente vai ver</h2>
           <div class="previa-whats"><div class="balao">
-            <img class="balao-imagem oculto" data-previa-imagem alt="">
+            <div class="balao-imagens oculto" data-previa-imagens></div>
             <div data-previa></div></div></div>
           <p class="suave pequeno" style="margin-top:8px">Exemplo com a cliente "Maria Silva".</p>
         </div>
@@ -186,33 +212,26 @@ export async function render(el, { params }) {
         <div class="card">
           <h2>📤 Enviar</h2>
 
-          <h3>1️⃣ Para todos de uma vez <span class="badge badge-verde">recomendado para promoções</span></h3>
-          <p class="suave pequeno">Pela <strong>lista de transmissão</strong> do WhatsApp Business: você envia uma vez e todos recebem,
-            com a imagem. É grátis. A mensagem vai igual para todos (sem o nome do cliente).
+          <h3>💬 Um por um <span class="badge badge-verde">com o nome de cada cliente</span></h3>
+          <p class="suave pequeno">Abre o WhatsApp de cada cliente com a mensagem pronta, um de cada vez.
+            Com imagens <strong>por link</strong>, o link das fotos já vai no fim da mensagem.</p>
+          <button type="button" class="btn btn-whats btn-grande btn-bloco" data-um-por-um>▶ Enviar um por um</button>
+
+          <hr class="separador">
+          <h3>📢 Lista de transmissão <span class="badge badge-cinza">grátis · você envia pelo celular</span></h3>
+          <p class="suave pequeno">Você envia uma vez pelo WhatsApp Business e todos da lista recebem (sem o nome do cliente).
             Só recebe quem tem o número da farmácia salvo nos contatos.</p>
           <ol class="passos">
             <li><button type="button" class="btn btn-sec" data-vcf>⬇ Baixar os contatos selecionados</button>
-              <small>No celular da farmácia, abra o arquivo baixado para salvar todos os contatos de uma vez
-              (eles aparecem com "(cliente)" no fim do nome). Só precisa fazer de novo quando tiver clientes novos.</small></li>
-            <li>No WhatsApp Business: <strong>⋮ → Nova transmissão</strong> (ou "Listas de transmissão"),
-              procure por <strong>cliente</strong>, marque os contatos e confirme.
-              <small>Cada lista aceita até ${LIMITE_TRANSMISSAO} contatos. Na próxima promoção, use a mesma lista.</small></li>
-            <li><button type="button" class="btn btn-whats" data-compartilhar>📤 Compartilhar imagem + texto</button>
-              <small>Escolha <strong>WhatsApp Business</strong> e depois a sua lista de transmissão.</small>
-              <span class="item-acoes oculto" data-alternativa style="margin-top:6px">
-                <button type="button" class="btn btn-sec btn-pequeno" data-copiar>📋 Copiar texto</button>
-                <button type="button" class="btn btn-sec btn-pequeno" data-baixar-imagem>⬇ Baixar imagem</button>
-              </span></li>
+              <small>No celular da farmácia, abra o arquivo para salvar os contatos (aparecem com "(cliente)" no nome).</small></li>
+            <li>No WhatsApp Business: <strong>⋮ → Nova transmissão</strong>, procure por <strong>cliente</strong>,
+              marque os contatos e confirme. <small>Até ${LIMITE_TRANSMISSAO} contatos por lista. Reaproveite a lista nas próximas promoções.</small></li>
+            <li><button type="button" class="btn btn-sec" data-copiar>📋 Copiar texto</button>
+              <small>Cole o texto na lista de transmissão. Com imagens por link, o link já vai junto;
+              no modo manual, anexe as fotos baixadas (📎).</small></li>
             <li><button type="button" class="btn btn-verde" data-marcar-enviada>✓ Já enviei para a lista</button>
               <small>Registra no histórico de cada cliente selecionado.</small></li>
           </ol>
-
-          <hr class="separador">
-          <h3>2️⃣ Um por um (com o nome de cada cliente)</h3>
-          <p class="suave pequeno">Um cliente de cada vez, com o nome dele na mensagem.
-            <strong>Com imagem:</strong> no celular, o botão "Enviar com a imagem" abre o menu Compartilhar —
-            escolha WhatsApp e o contato. No computador, copie a imagem e cole (Ctrl+V) na conversa.</p>
-          <button type="button" class="btn btn-whats btn-grande btn-bloco" data-um-por-um>▶ Enviar um por um</button>
         </div>
 
         <div class="card"><h2>📬 Já receberam (${jaRecebeu.size})</h2>
@@ -237,19 +256,26 @@ export async function render(el, { params }) {
 
   // ---- Prévia e texto para todos ------------------------------------------
   const atualizarPrevia = async () => {
-    $('[data-previa]').textContent = await previaMensagem(txt.value);
+    $('[data-previa]').textContent = (await previaMensagem(txt.value)) + rodape();
     textoTodos = await textoParaTodos(txt.value);
   };
-  const mostrarImagem = () => {
-    const temImagem = Boolean(imagemUrl);
-    ['[data-imagem-previa]', '[data-previa-imagem]'].forEach((s) => {
-      const img = $(s);
-      img.classList.toggle('oculto', !temImagem);
-      if (temImagem) img.src = imagemUrl; else img.removeAttribute('src');
-    });
-    $('[data-remover-imagem]').classList.toggle('oculto', !temImagem);
-    $('[data-rotulo-imagem]').textContent = temImagem ? 'Trocar imagem' : 'Escolher imagem';
-    atualizarAlternativa();
+
+  /** Desenha a galeria de imagens, a prévia e a escolha link/manual */
+  const mostrarImagens = () => {
+    const tem = imagens.length > 0;
+    $('[data-galeria]').innerHTML = imagens.map((u, i) => `
+      <figure class="galeria-item">
+        <img src="${esc(u)}" alt="Imagem ${i + 1}" loading="lazy">
+        <button type="button" class="galeria-remover" data-remover-img="${i}" aria-label="Remover imagem ${i + 1}">✕</button>
+      </figure>`).join('');
+    $('[data-modo-imagem]').classList.toggle('oculto', !tem);
+    $('[data-baixar-imagens]').classList.toggle('oculto', !tem || porLink);
+    // Na prévia: no modo manual as fotos aparecem anexadas; no modo link, vai o link no texto
+    const previaImgs = $('[data-previa-imagens]');
+    previaImgs.classList.toggle('oculto', !tem || porLink);
+    previaImgs.innerHTML = tem && !porLink
+      ? imagens.slice(0, 4).map((u) => `<img src="${esc(u)}" alt="">`).join('') : '';
+    atualizarPrevia();
   };
 
   ligarBotoesVariaveis(form, txt, atualizarPrevia);
@@ -261,32 +287,63 @@ export async function render(el, { params }) {
 
   // ---- Imagem -----------------------------------------------------------------
   $('[data-arquivo]').addEventListener('change', async (e) => {
-    const original = e.target.files[0];
+    const escolhidos = [...e.target.files];
     e.target.value = '';
-    if (!original) return;
+    if (!escolhidos.length) return;
+    const vagas = MAX_IMAGENS - imagens.length;
+    if (vagas <= 0) return toast(`Máximo de ${MAX_IMAGENS} imagens por campanha.`, 'erro');
+    if (escolhidos.length > vagas) toast(`Só cabem mais ${vagas} imagem(ns). As demais foram ignoradas.`, 'info');
+
     const status = $('[data-status-imagem]');
-    status.innerHTML = '<span class="spinner pequeno escuro"></span> Enviando imagem...';
-    try {
-      const arquivo = await prepararImagem(original);
-      const url = await enviarImagem(arquivo);
-      // imagem anterior que ainda não estava salva na campanha pode ser apagada
-      if (imagemUrl && imagemUrl !== camp.imagem_url) removerImagem(imagemUrl).catch(() => {});
-      imagemUrl = url;
-      arquivoImagem = arquivo;
-      status.textContent = '✅ Imagem pronta. Não esqueça de salvar a campanha.';
-      mostrarImagem();
-    } catch (erro) {
-      status.textContent = 'Não foi possível enviar a imagem.';
-      mostrarErro(erro, /bucket|not found/i.test(erro?.message) ? 'A pasta de imagens ainda não existe: rode a atualização 02 no Supabase.' : 'Não foi possível enviar a imagem.');
+    const lista = escolhidos.slice(0, vagas);
+    let ok = 0;
+    for (const [i, original] of lista.entries()) {
+      status.innerHTML = `<span class="spinner pequeno escuro"></span> Enviando imagem ${i + 1} de ${lista.length}...`;
+      try {
+        const url = await enviarImagem(await prepararImagem(original));
+        imagens.push(url);
+        ok++;
+        mostrarImagens();
+      } catch (erro) {
+        mostrarErro(erro, /bucket|not found/i.test(erro?.message)
+          ? 'A pasta de imagens ainda não existe: rode a atualização 02 no Supabase.'
+          : `Não foi possível enviar a imagem "${original.name}".`);
+      }
     }
+    status.textContent = ok
+      ? `✅ ${ok} imagem(ns) adicionada(s). Não esqueça de salvar a campanha.`
+      : 'Nenhuma imagem foi adicionada.';
   });
-  $('[data-remover-imagem]').addEventListener('click', () => {
-    if (imagemUrl && imagemUrl !== camp.imagem_url) removerImagem(imagemUrl).catch(() => {});
-    imagemUrl = null;
-    arquivoImagem = null;
+
+  $('[data-galeria]').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-remover-img]');
+    if (!b) return;
+    const [url] = imagens.splice(Number(b.dataset.removerImg), 1);
+    // imagem que ainda não estava salva na campanha já pode ser apagada do Storage
+    if (url && !imagensSalvas.includes(url)) removerImagem(url).catch(() => {});
     $('[data-status-imagem]').textContent = 'Imagem removida. Salve a campanha para confirmar.';
-    mostrarImagem();
+    mostrarImagens();
   });
+
+  form.querySelectorAll('[name=imagens_por_link]').forEach((r) => r.addEventListener('change', () => {
+    porLink = form.querySelector('[name=imagens_por_link]:checked').value === 'link';
+    mostrarImagens();
+  }));
+
+  // Modo manual: baixa as imagens para anexar no WhatsApp
+  $('[data-baixar-imagens]').addEventListener('click', (e) => comBotaoOcupado(e.currentTarget, async () => {
+    for (const [i, u] of imagens.entries()) {
+      try {
+        const arq = await baixarComoArquivo(u);
+        const ext = { 'image/png': 'png', 'image/webp': 'webp' }[arq.type] || 'jpg';
+        baixarArquivo(`promocao-${i + 1}.${ext}`, arq, arq.type || 'image/jpeg');
+        await new Promise((r) => setTimeout(r, 400)); // o navegador baixa um por vez
+      } catch (erro) {
+        mostrarErro(erro, `Não foi possível baixar a imagem ${i + 1}.`);
+      }
+    }
+    toast('Imagens baixadas! Anexe no WhatsApp com o 📎.');
+  }, 'Baixando...'));
 
   // ---- Contatos -------------------------------------------------------------
   const todosContatos = () => {
@@ -431,7 +488,9 @@ export async function render(el, { params }) {
     const dados = {
       titulo: d.titulo,
       mensagem: d.mensagem,
-      imagem_url: imagemUrl,
+      imagem_url: imagens[0] ?? null,
+      imagens: [...imagens],
+      imagens_por_link: porLink,
       data_envio: d.data_envio || hojeISO(),
       filtro_tags: p.tags,
       filtro_aniversariantes_mes: p.aniversariantes,
@@ -443,12 +502,13 @@ export async function render(el, { params }) {
       : supabase.from('campanhas').update(dados).eq('id', camp.id);
     const { data: salva, error } = await consulta.select().single();
     if (error) {
-      mostrarErro(error, /clientes_(ex|in)cluidos/.test(error.message)
-        ? 'Falta rodar a atualização 02 no Supabase (veja as instruções).' : undefined);
+      const falta = /imagens/.test(error.message) ? '03' : /clientes_(ex|in)cluidos/.test(error.message) ? '02' : null;
+      mostrarErro(error, falta ? `Falta rodar a atualização ${falta} no Supabase (veja as instruções).` : undefined);
       return null;
     }
-    // A imagem antiga foi trocada/removida: apaga do Storage
-    if (camp.imagem_url && camp.imagem_url !== salva.imagem_url) removerImagem(camp.imagem_url).catch(() => {});
+    // Imagens tiradas da campanha: apaga do Storage
+    imagensSalvas.filter((u) => !imagens.includes(u)).forEach((u) => removerImagem(u).catch(() => {}));
+    imagensSalvas = [...imagens];
     camp = { ...camp, ...salva };
     if (!silencioso) {
       toast('Campanha salva. ✅');
@@ -525,45 +585,12 @@ export async function render(el, { params }) {
     toast(`${sel.length} contato(s) baixado(s). Abra o arquivo no celular da farmácia.`);
   });
 
-  function atualizarAlternativa() {
-    const alt = $('[data-alternativa]');
-    if (!alt) return;
-    const semSuporte = !navigator.share || (imagemUrl && arquivoImagem && !podeCompartilharArquivo(arquivoImagem));
-    alt.classList.toggle('oculto', !semSuporte);
-    $('[data-baixar-imagem]').classList.toggle('oculto', !imagemUrl);
-  }
-
-  $('[data-compartilhar]')?.addEventListener('click', async () => {
-    if (imagemUrl && !arquivoImagem) {
-      toast('A imagem ainda está carregando. Tente de novo em 2 segundos.', 'info');
-      return;
-    }
-    try {
-      const r = await compartilhar({ texto: textoTodos, arquivo: imagemUrl ? arquivoImagem : null });
-      if (r === 'sem-suporte') {
-        $('[data-alternativa]').classList.remove('oculto');
-        toast('Este aparelho não compartilha direto. Use "Copiar texto" e "Baixar imagem".', 'info', 6000);
-      } else if (r === 'so-texto') {
-        toast('Este aparelho só compartilhou o texto. Baixe a imagem e anexe no WhatsApp.', 'info', 6000);
-        $('[data-alternativa]').classList.remove('oculto');
-      }
-    } catch (erro) {
-      mostrarErro(erro, 'Não foi possível abrir o compartilhamento.');
-    }
-  });
-
   $('[data-copiar]')?.addEventListener('click', async () => {
     try {
-      await navigator.clipboard.writeText(textoTodos);
+      await navigator.clipboard.writeText(textoTodos + rodape());
       toast('Texto copiado! Cole no WhatsApp.');
     } catch {
       toast('Não consegui copiar. Selecione o texto da prévia e copie.', 'erro');
-    }
-  });
-  $('[data-baixar-imagem]')?.addEventListener('click', () => {
-    if (arquivoImagem) {
-      const ext = { 'image/png': 'png', 'image/webp': 'webp' }[arquivoImagem.type] || 'jpg';
-      baixarArquivo(`promocao.${ext}`, arquivoImagem, arquivoImagem.type || 'image/jpeg');
     }
   });
 
@@ -615,12 +642,10 @@ export async function render(el, { params }) {
       itens: lista,
       jaEnviados: escolha.reenvio ? 0 : sel.length - lista.length,
       total: escolha.reenvio ? lista.length : sel.length,
-      arquivo: imagemUrl ? arquivoImagem : null, // a foto vai como arquivo (celular: Compartilhar; PC: colar)
-      linkImagem: imagemUrl,                     // só usado se a foto não puder ir como arquivo
       montar: async (c) => ({
         nome: c.nome,
         telefone: c.telefone,
-        mensagem: await mensagemLivre(camp.mensagem, c),
+        mensagem: (await mensagemLivre(camp.mensagem, c)) + rodape(),
       }),
       aoEnviar: (c) => registrarEnvios([c]),
     });
@@ -634,23 +659,18 @@ export async function render(el, { params }) {
   // ---- Excluir ----------------------------------------------------------------
   $('[data-excluir]')?.addEventListener('click', async () => {
     const ok = await confirmar({
-      titulo: 'Excluir campanha', mensagem: 'Excluir esta campanha, a imagem dela e o registro dos envios?', botao: 'Excluir', perigo: true,
+      titulo: 'Excluir campanha', mensagem: 'Excluir esta campanha, as imagens dela e o registro dos envios?', botao: 'Excluir', perigo: true,
     });
     if (!ok) return;
     const { error } = await supabase.from('campanhas').delete().eq('id', camp.id);
     if (error) return mostrarErro(error);
-    if (camp.imagem_url) removerImagem(camp.imagem_url).catch(() => {});
+    new Set([...imagens, ...imagensSalvas]).forEach((u) => removerImagem(u).catch(() => {}));
     toast('Campanha excluída.');
     ir('/campanhas');
   });
 
   // ---- Início -----------------------------------------------------------------
-  mostrarImagem();
-  atualizarPrevia();
-  if (imagemUrl) {
-    baixarComoArquivo(imagemUrl).then((f) => { arquivoImagem = f; atualizarAlternativa(); })
-      .catch(() => { $('[data-status-imagem]').textContent = '⚠️ Não foi possível carregar a imagem salva.'; });
-  }
+  mostrarImagens();
   try {
     extras = await buscarPorIds([...incluidos]);
   } catch (erro) {
