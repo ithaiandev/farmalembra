@@ -238,8 +238,8 @@ main#conteudo {
   padding: 14px; box-shadow: var(--sombra);
   border-left: 5px solid var(--azul);
 }
-.numero .valor { font-size: 1.9rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.numero .rotulo { font-size: .85rem; color: var(--texto-suave); font-weight: 600; }
+.numero .valor { display: block; font-size: 1.9rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.numero .rotulo { display: block; margin-top: 2px; font-size: .85rem; color: var(--texto-suave); font-weight: 600; }
 .numero.verde { border-left-color: var(--verde); }
 .numero.vermelho { border-left-color: var(--vermelho); }
 .numero.amarelo { border-left-color: var(--amarelo); }
@@ -417,6 +417,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 dialog.modal {
   width: min(560px, calc(100vw - 24px));
   max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px); /* celular: desconta a barra do navegador */
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0; border: 0; border-radius: var(--raio);
   background: var(--superficie); color: var(--texto);
   box-shadow: 0 20px 60px rgba(0,0,0,.3);
