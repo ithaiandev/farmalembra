@@ -173,9 +173,15 @@ create table if not exists public.campanhas (
   filtro_aniversariantes_mes boolean not null default false,
   data_envio                date default public.hoje(),
   status                    text not null default 'rascunho' check (status in ('rascunho', 'enviando', 'concluida')),
+  clientes_excluidos        uuid[] not null default '{}',  -- desmarcados à mão
+  clientes_incluidos        uuid[] not null default '{}',  -- adicionados à mão
   criado_por                uuid default auth.uid() references public.perfis(id) on delete set null,
   criado_em                 timestamptz not null default now()
 );
+
+-- (para bancos criados antes dessas colunas existirem)
+alter table public.campanhas add column if not exists clientes_excluidos uuid[] not null default '{}';
+alter table public.campanhas add column if not exists clientes_incluidos uuid[] not null default '{}';
 
 -- 2.8 Envios de cada campanha (um por cliente)
 create table if not exists public.campanha_envios (
@@ -914,5 +920,32 @@ select cron.schedule('farmalembra-status-diario', '5 3 * * *',
                      $$ select public.atualizar_status_lembretes(); $$);
 select cron.schedule('farmalembra-envio-automatico', '0 12 * * *',
                      $$ select public.disparar_envio_automatico(); $$);
+
+-- ---------------------------------------------------------------------
+-- 11. IMAGENS DAS CAMPANHAS (Supabase Storage)
+--     Pasta pública (o WhatsApp precisa abrir o link da imagem).
+--     Use só imagens de produtos/eventos — nunca receitas ou fotos de clientes.
+-- ---------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('campanhas', 'campanhas', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public             = excluded.public,
+      file_size_limit    = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists campanhas_imagens_ver on storage.objects;
+create policy campanhas_imagens_ver on storage.objects
+  for select to authenticated
+  using (bucket_id = 'campanhas' and public.eh_usuario_ativo());
+
+drop policy if exists campanhas_imagens_enviar on storage.objects;
+create policy campanhas_imagens_enviar on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'campanhas' and public.eh_usuario_ativo());
+
+drop policy if exists campanhas_imagens_apagar on storage.objects;
+create policy campanhas_imagens_apagar on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'campanhas' and public.eh_usuario_ativo());
 
 -- Fim do arquivo ✅

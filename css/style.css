@@ -211,7 +211,7 @@ main#conteudo {
 .btn-icone:hover { background: rgba(127, 127, 127, .15); }
 
 .acoes-rapidas { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 16px 0 20px; }
-@media (min-width: 600px) { .acoes-rapidas { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 600px) { .acoes-rapidas { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); } }
 
 /* ---------------------------------------------------------------------
    Cartões e grades
@@ -501,6 +501,27 @@ dialog.modal::backdrop { background: rgba(10, 20, 35, .55); }
 .documento { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
 .documento h1 { color: var(--azul); }
 .documento h2 { margin-top: 1.4em; }
+
+/* Campanhas: imagem, contatos e passos de envio */
+.imagem-campanha {
+  display: block; max-width: 100%; max-height: 320px; margin: 0 auto 12px;
+  border-radius: var(--raio-p); border: 1px solid var(--borda); object-fit: contain; background: var(--superficie-2);
+}
+.balao-imagem { display: block; width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; }
+.lista-contatos {
+  max-height: 380px; overflow-y: auto; border: 1px solid var(--borda); border-radius: var(--raio-p);
+  padding: 0 12px; background: var(--superficie-2);
+}
+.lista-contatos .item { padding: 0; }
+.contato-label { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 0; cursor: pointer; }
+.contato-label .item-titulo, .contato-label .item-sub { display: block; }
+.adicionar-contato { margin-top: 8px; }
+.passos { padding-left: 22px; margin: 10px 0 0; }
+.passos li { margin-bottom: 14px; }
+.passos li small { display: block; color: var(--texto-suave); margin-top: 4px; }
+.passos .btn { margin-top: 2px; }
+.separador { border: 0; border-top: 1px solid var(--borda); margin: 18px 0; }
+.spinner.pequeno.escuro { border-color: var(--borda); border-top-color: var(--azul); vertical-align: -3px; }
 
 /* Ficha */
 .ficha-topo { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }

@@ -77,9 +77,20 @@ export function abrirModal({ titulo, html, largura = '', aoAbrir }) {
       <div class="modal-corpo">${html}</div>`;
     document.body.appendChild(dlg);
 
-    let valor;
-    const fechar = (v) => { valor = v; dlg.close(); };
-    dlg.addEventListener('close', () => { dlg.remove(); resolve(valor); });
+    // Responde na hora do clique (não depende do evento "close", que pode atrasar).
+    // O "close" ainda cobre o caso da tecla Esc / botão voltar.
+    let terminou = false;
+    const terminar = (v) => {
+      if (terminou) return;
+      terminou = true;
+      dlg.remove();
+      resolve(v);
+    };
+    const fechar = (v) => {
+      if (dlg.open) dlg.close();
+      terminar(v);
+    };
+    dlg.addEventListener('close', () => terminar(undefined));
     dlg.querySelector('[data-fechar]').addEventListener('click', () => fechar(undefined));
     dlg.addEventListener('click', (e) => { if (e.target === dlg) fechar(undefined); });
 

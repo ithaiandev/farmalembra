@@ -33,6 +33,7 @@ export async function render(el) {
       <a href="#/lembretes?fila=1" class="btn btn-whats btn-grande">🔔 Enviar lembretes de hoje (${r.hoje})</a>
       <a href="#/balcao" class="btn btn-primario btn-grande">🛒 Registrar compra</a>
       <a href="#/clientes/novo" class="btn btn-sec btn-grande">➕ Novo cliente</a>
+      <a href="#/campanhas/nova" class="btn btn-sec btn-grande">📣 Nova campanha / promoção</a>
     </div>
 
     <div class="grade-cards">

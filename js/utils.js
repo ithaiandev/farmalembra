@@ -246,6 +246,27 @@ export function lerCSV(texto) {
   return linhas.slice(1).map((l) => Object.fromEntries(cab.map((h, i) => [h, (l[i] ?? '').trim()])));
 }
 
+/**
+ * Arquivo de contatos (.vcf) para salvar no celular de uma vez.
+ * O sufixo "(cliente)" ajuda a achar todos na hora de montar a lista de transmissão.
+ */
+export function gerarVCard(clientes, sufixo = '(cliente)') {
+  const limpar = (s) => String(s ?? '').replace(/[\r\n;,]/g, ' ').trim();
+  return clientes.map((c) => {
+    const nome = limpar(c.nome);
+    const partes = nome.split(/\s+/);
+    const primeiro = partes.shift() || nome;
+    return [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      `N:${partes.join(' ')};${primeiro};;;${sufixo}`,
+      `FN:${nome} ${sufixo}`,
+      `TEL;TYPE=CELL:+${String(c.telefone).replace(/\D/g, '')}`,
+      'END:VCARD',
+    ].join('\r\n');
+  }).join('\r\n') + '\r\n';
+}
+
 export function semAcento(s) {
   return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
