@@ -30,7 +30,7 @@ const MAX_IMAGENS = 10;
  * O "v" muda quando a 1ª foto muda: o WhatsApp guarda a prévia de cada link,
  * então um link novo faz ele buscar a foto (capa) atual em vez da antiga.
  */
-const VERSAO_PREVIA = 2; // aumente se mudar o formato da capa (força o WhatsApp a ler de novo)
+const VERSAO_PREVIA = 3; // aumente se mudar o formato da capa (força o WhatsApp a ler de novo)
 
 function linkFotos(campanhaId, primeiraImagem = '') {
   const arquivo = String(primeiraImagem).split('/').pop().replace(/\.\w+$/, '');
@@ -41,7 +41,7 @@ function linkFotos(campanhaId, primeiraImagem = '') {
 /** Aviso + link que vai no fim da mensagem (só no modo "por link") */
 function rodapeImagens(imagens, campanhaId) {
   if (!imagens.length) return '';
-  return `\n\n📸 Toque no link para ver ${imagens.length > 1 ? 'as fotos' : 'a foto'} da promoção:\n${linkFotos(campanhaId, imagens[0])}`;
+  return `\n\n📸 Confira aqui:\n${linkFotos(campanhaId, imagens[0])}`;
 }
 
 const VARS_CAMPANHA = ['{nome}', '{farmacia}', '{telefone_farmacia}', '{endereco}', '{horario}'];
@@ -164,7 +164,7 @@ export async function render(el, { params }) {
           <div class="modo-imagem oculto" data-modo-imagem>
             <span class="campo-titulo">Como as imagens vão para o cliente?</span>
             <label class="checkbox"><input type="radio" name="imagens_por_link" value="link" ${porLink ? 'checked' : ''}>
-              <span>🔗 Por link <small>A mensagem termina com "📸 Toque no link para ver as fotos da promoção"
+              <span>🔗 Por link <small>A mensagem termina com "📸 Confira aqui:"
               e o link abre uma página com todas as imagens.</small></span></label>
             <label class="checkbox"><input type="radio" name="imagens_por_link" value="manual" ${porLink ? '' : 'checked'}>
               <span>✋ Eu anexo manualmente <small>A mensagem vai sem link. Baixe as imagens e anexe você mesmo no WhatsApp (📎).</small></span></label>
