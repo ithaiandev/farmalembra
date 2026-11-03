@@ -73,17 +73,40 @@ export async function removerImagem(url) {
 
 /**
  * Atualiza a "capa" usada na prévia do link no WhatsApp (arquivo campanhas/capa.jpg).
- * A página promo.html aponta para essa capa (og:image). O WhatsApp só mostra
- * prévia de imagens pequenas, então a capa é reduzida para 800 px.
+ * A página promo.html aponta para essa capa (og:image). A capa tem sempre
+ * 1200×630 (formato da prévia GRANDE do WhatsApp): a foto inteira fica no
+ * meio, com fundo branco nas sobras, e o arquivo fica leve.
  */
 export const ARQUIVO_CAPA = 'capa.jpg';
+const CAPA_LARGURA = 1200;
+const CAPA_ALTURA = 630;
+
+async function montarCapa(arquivo) {
+  const bmp = await createImageBitmap(arquivo);
+  const escala = Math.min(CAPA_LARGURA / bmp.width, CAPA_ALTURA / bmp.height);
+  const w = Math.round(bmp.width * escala);
+  const h = Math.round(bmp.height * escala);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = CAPA_LARGURA;
+  canvas.height = CAPA_ALTURA;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, CAPA_LARGURA, CAPA_ALTURA);
+  ctx.drawImage(bmp, Math.round((CAPA_LARGURA - w) / 2), Math.round((CAPA_ALTURA - h) / 2), w, h);
+  bmp.close?.();
+
+  const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/jpeg', 0.82));
+  if (!blob) throw new Error('Não foi possível processar a imagem.');
+  return new File([blob], ARQUIVO_CAPA, { type: 'image/jpeg' });
+}
 
 export async function atualizarCapa(urlImagem) {
   const original = await baixarComoArquivo(urlImagem);
   let capa;
   try {
     const limite = new Promise((_, falha) => setTimeout(() => falha(new Error('tempo')), 10000));
-    capa = await Promise.race([reduzir(original, 800, 0.8), limite]);
+    capa = await Promise.race([montarCapa(original), limite]);
   } catch {
     capa = original.size <= 600 * 1024 ? original : null; // se não reduziu, só usa se já for leve
   }

@@ -30,9 +30,11 @@ const MAX_IMAGENS = 10;
  * O "v" muda quando a 1ª foto muda: o WhatsApp guarda a prévia de cada link,
  * então um link novo faz ele buscar a foto (capa) atual em vez da antiga.
  */
+const VERSAO_PREVIA = 2; // aumente se mudar o formato da capa (força o WhatsApp a ler de novo)
+
 function linkFotos(campanhaId, primeiraImagem = '') {
   const arquivo = String(primeiraImagem).split('/').pop().replace(/\.\w+$/, '');
-  const v = arquivo.replace(/[^0-9a-z]/gi, '').slice(0, 8);
+  const v = arquivo ? VERSAO_PREVIA + arquivo.replace(/[^0-9a-z]/gi, '').slice(0, 8) : '';
   return new URL(`promo.html?c=${campanhaId || 'codigo-da-campanha'}${v ? `&v=${v}` : ''}`, location.href).href;
 }
 

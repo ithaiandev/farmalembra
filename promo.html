@@ -2,15 +2,10 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <!-- Segurança (CSP): só aceita scripts deste site e da biblioteca do Supabase; nada escrito direto na página -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests">
-  <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Promoção</title>
-  <meta name="theme-color" content="#0b63c5">
   <!--
     Prévia do link no WhatsApp: o WhatsApp lê estas linhas (sem rodar JavaScript).
-    A "capa" (og:image) é a 1ª imagem da última campanha salva — o sistema troca
+    Ficam no começo da página para ele achar rápido.
+    A "capa" (og:image, 1200×630) é a 1ª imagem da última campanha salva — o sistema troca
     o arquivo capa.jpg sozinho ao salvar a campanha.
     Para outra farmácia: troque o endereço do Supabase em og:image.
   -->
@@ -20,8 +15,16 @@
   <meta property="og:image" content="https://hydqyhahyopiykcvgcvf.supabase.co/storage/v1/object/public/campanhas/capa.jpg">
   <meta property="og:image:secure_url" content="https://hydqyhahyopiykcvgcvf.supabase.co/storage/v1/object/public/campanhas/capa.jpg">
   <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Imagem da promoção">
   <meta name="twitter:card" content="summary_large_image">
+  <!-- Segurança (CSP): só aceita scripts deste site e da biblioteca do Supabase; nada escrito direto na página -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Promoção</title>
+  <meta name="theme-color" content="#0b63c5">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
   <style>
