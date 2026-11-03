@@ -2,19 +2,15 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
+  <!-- Segurança (CSP): só aceita scripts deste site e da biblioteca do Supabase; nada escrito direto na página -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Política de Privacidade · FarmaLembra</title>
   <meta name="theme-color" content="#0b63c5">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
-  <script>
-    try {
-      const t = localStorage.getItem('tema');
-      if (t === 'escuro' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.dataset.tema = 'escuro';
-      }
-    } catch (e) {}
-  </script>
+  <script src="js/inicio.js"></script>
 </head>
 <body>
   <article class="documento">
@@ -63,19 +59,6 @@
     <p class="suave pequeno">Sistema de lembretes: FarmaLembra.</p>
   </article>
 
-  <script type="module">
-    // Nome, endereço e telefone vêm das Configurações do sistema (não precisa editar este arquivo)
-    import { dadosPublicosFarmacia } from './js/store.js';
-    const f = await dadosPublicosFarmacia();
-    if (f?.nome) {
-      document.querySelectorAll('[data-nome]').forEach((el) => (el.textContent = f.nome));
-      document.title = `Política de Privacidade · ${f.nome}`;
-    }
-    if (f?.endereco) document.querySelector('[data-endereco]').textContent = ` (${f.endereco})`;
-    if (f?.telefone) {
-      document.querySelector('[data-telefone]').textContent = f.telefone;
-      document.querySelector('[data-tem-telefone]').classList.remove('oculto');
-    }
-  </script>
+  <script type="module" src="js/privacidade.js"></script>
 </body>
 </html>

@@ -2,6 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
+  <!-- Segurança (CSP): só aceita scripts deste site e da biblioteca do Supabase; nada escrito direto na página -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Promoção</title>
   <meta name="theme-color" content="#0b63c5">
@@ -15,6 +18,8 @@
   <meta property="og:title" content="📸 Fotos da promoção">
   <meta property="og:description" content="Toque para ver as imagens da promoção da farmácia.">
   <meta property="og:image" content="https://hydqyhahyopiykcvgcvf.supabase.co/storage/v1/object/public/campanhas/capa.jpg">
+  <meta property="og:image:secure_url" content="https://hydqyhahyopiykcvgcvf.supabase.co/storage/v1/object/public/campanhas/capa.jpg">
+  <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:alt" content="Imagem da promoção">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
@@ -37,11 +42,7 @@
     .promo-info .btn { margin-top: 10px; }
     .promo-rodape { text-align: center; margin-top: 26px; font-size: .8rem; color: var(--texto-suave); }
   </style>
-  <script>
-    try {
-      if (matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.tema = 'escuro';
-    } catch (e) {}
-  </script>
+  <script src="js/inicio.js"></script>
 </head>
 <body>
   <header class="promo-topo">
@@ -60,46 +61,6 @@
     <p class="promo-rodape">Promoção válida enquanto durarem os estoques. · FarmaLembra</p>
   </main>
 
-  <script type="module">
-    import { supabase } from './js/supabase.js';
-    import { dadosPublicosFarmacia } from './js/store.js';
-    import { esc, linkWhatsApp, normalizarTelefone } from './js/utils.js';
-
-    const $ = (s) => document.querySelector(s);
-    const id = new URLSearchParams(location.search).get('c') || '';
-    const fotos = $('[data-fotos]');
-
-    // Nome, endereço e telefone da farmácia
-    dadosPublicosFarmacia().then((f) => {
-      if (!f) return;
-      if (f.nome) {
-        $('[data-nome]').textContent = f.nome;
-        document.title = `Promoção · ${f.nome}`;
-      }
-      if (f.endereco) $('[data-endereco]').textContent = `📍 ${f.endereco}`;
-      const tel = normalizarTelefone(f.telefone || '');
-      if (tel) {
-        const b = $('[data-whats]');
-        b.href = linkWhatsApp(tel, 'Olá! Vi as fotos da promoção e quero saber mais. 😊');
-        b.classList.remove('oculto');
-      }
-      $('[data-info]').classList.remove('oculto');
-    });
-
-    // Fotos da campanha
-    const valido = /^[0-9a-f-]{36}$/i.test(id);
-    const { data, error } = valido
-      ? await supabase.rpc('imagens_campanha', { p_id: id })
-      : { data: null, error: null };
-    const lista = (data?.imagens || []).filter((u) => /^https?:\/\//.test(u)); // só links de verdade
-
-    if (error || !lista.length) {
-      fotos.innerHTML = `<div class="vazio"><div class="vazio-icone">🖼️</div>
-        <p>${valido && !error ? 'Esta promoção não tem fotos.' : 'Promoção não encontrada ou já encerrada.'}</p></div>`;
-    } else {
-      fotos.innerHTML = lista.map((u, i) =>
-        `<img src="${esc(u)}" alt="Foto ${i + 1} da promoção" loading="${i ? 'lazy' : 'eager'}">`).join('');
-    }
-  </script>
+  <script type="module" src="js/promo.js"></script>
 </body>
 </html>

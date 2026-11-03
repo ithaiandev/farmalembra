@@ -25,15 +25,21 @@ import {
 
 const MAX_IMAGENS = 10;
 
-/** Link da página pública com as fotos da campanha (promo.html) */
-function linkFotos(campanhaId) {
-  return new URL(`promo.html?c=${campanhaId || 'codigo-da-campanha'}`, location.href).href;
+/**
+ * Link da página pública com as fotos da campanha (promo.html).
+ * O "v" muda quando a 1ª foto muda: o WhatsApp guarda a prévia de cada link,
+ * então um link novo faz ele buscar a foto (capa) atual em vez da antiga.
+ */
+function linkFotos(campanhaId, primeiraImagem = '') {
+  const arquivo = String(primeiraImagem).split('/').pop().replace(/\.\w+$/, '');
+  const v = arquivo.replace(/[^0-9a-z]/gi, '').slice(0, 8);
+  return new URL(`promo.html?c=${campanhaId || 'codigo-da-campanha'}${v ? `&v=${v}` : ''}`, location.href).href;
 }
 
 /** Aviso + link que vai no fim da mensagem (só no modo "por link") */
-function rodapeImagens(qtd, campanhaId) {
-  if (!qtd) return '';
-  return `\n\n📸 Toque no link para ver ${qtd > 1 ? 'as fotos' : 'a foto'} da promoção:\n${linkFotos(campanhaId)}`;
+function rodapeImagens(imagens, campanhaId) {
+  if (!imagens.length) return '';
+  return `\n\n📸 Toque no link para ver ${imagens.length > 1 ? 'as fotos' : 'a foto'} da promoção:\n${linkFotos(campanhaId, imagens[0])}`;
 }
 
 const VARS_CAMPANHA = ['{nome}', '{farmacia}', '{telefone_farmacia}', '{endereco}', '{horario}'];
@@ -114,7 +120,7 @@ export async function render(el, { params }) {
   let imagensSalvas = [...imagens];          // as que já estão gravadas na campanha
   let porLink = camp.imagens_por_link !== false; // true = link na mensagem; false = anexo manual
   let textoTodos = '';           // texto da lista de transmissão (sem nome)
-  const rodape = () => (porLink ? rodapeImagens(imagens.length, camp.id) : '');
+  const rodape = () => (porLink ? rodapeImagens(imagens, camp.id) : '');
 
   const publicoInicial = camp.filtro_aniversariantes_mes ? 'aniversariantes' : camp.filtro_tags.length ? 'tags' : 'todos';
 

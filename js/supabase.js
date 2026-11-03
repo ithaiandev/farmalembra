@@ -1,5 +1,7 @@
-// Cliente do Supabase (um só para o site todo)
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+// Cliente do Supabase (um só para o site todo).
+// Versão FIXA da biblioteca: assim uma versão nova (ou adulterada) não entra
+// no site sem você saber. Para atualizar, troque o número e teste.
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
 import { CONFIG } from './config.js';
 
 export const configurado =

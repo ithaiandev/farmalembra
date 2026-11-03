@@ -233,17 +233,22 @@ as $$ select exists (select 1 from public.perfis where id = auth.uid() and ativo
 
 -- 4.1 Cria o perfil automaticamente quando um usuário é criado no Auth.
 --     O PRIMEIRO usuário vira admin; os demais entram como atendente.
+--     Só entra ATIVO quem foi convidado (proteção se o cadastro aberto
+--     do Supabase for ligado por engano).
 create or replace function public.criar_perfil_novo_usuario()
 returns trigger
 language plpgsql security definer set search_path = public
 as $$
+declare
+  v_tem_admin boolean := exists (select 1 from public.perfis where papel = 'admin');
 begin
-  insert into public.perfis (id, nome, email, papel)
+  insert into public.perfis (id, nome, email, papel, ativo)
   values (
     new.id,
     coalesce(nullif(new.raw_user_meta_data->>'nome', ''), split_part(new.email, '@', 1)),
     new.email,
-    case when exists (select 1 from public.perfis where papel = 'admin') then 'atendente' else 'admin' end
+    case when v_tem_admin then 'atendente' else 'admin' end,
+    (not v_tem_admin) or new.invited_at is not null
   )
   on conflict (id) do nothing;
   return new;
@@ -861,6 +866,10 @@ to authenticated;
 -- Única coisa que o visitante sem login pode ler: nome/telefone/endereço da farmácia
 grant execute on function public.dados_publicos_farmacia() to anon, authenticated;
 grant execute on function public.imagens_campanha(uuid) to anon, authenticated;
+
+-- Funções e tabelas criadas no futuro também não ficam abertas ao visitante
+alter default privileges in schema public revoke execute on functions from public, anon;
+alter default privileges in schema public revoke all on tables from anon;
 
 
 -- ---------------------------------------------------------------------
