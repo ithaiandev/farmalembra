@@ -1,0 +1,51 @@
+# =====================================================================
+#  Despertador do Supabase
+#
+#  O plano grátis do Supabase PAUSA o projeto depois de 7 dias sem uso.
+#  Este robô do GitHub faz uma consulta simples ao banco a cada 3 dias,
+#  para o projeto nunca pausar (mesmo em férias ou feriados).
+#
+#  - Não lê nem altera dados de clientes (usa a chave pública do site,
+#    a mesma que já está em js/config.js; sem login, o banco não mostra nada).
+#  - Não precisa configurar nada: ele pega o endereço do js/config.js.
+#  - Para rodar na hora: GitHub > aba Actions > "Manter Supabase ativo" > Run workflow.
+# =====================================================================
+name: Manter Supabase ativo
+
+on:
+  schedule:
+    - cron: "0 12 */3 * *"   # a cada 3 dias, 09:00 de Fortaleza
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  acordar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Consultar o banco
+        run: |
+          URL=$(grep -oE "SUPABASE_URL: *'[^']+'" js/config.js | cut -d"'" -f2)
+          CHAVE=$(grep -oE "SUPABASE_ANON_KEY: *'[^']+'" js/config.js | cut -d"'" -f2)
+          if [ -z "$URL" ] || [ -z "$CHAVE" ]; then
+            echo "Não encontrei SUPABASE_URL / SUPABASE_ANON_KEY em js/config.js"; exit 1
+          fi
+          for tentativa in 1 2 3; do
+            # Sem login o banco responde "permissão negada" (42501): isso é o
+            # esperado (segurança) e já prova que o banco respondeu = conta como uso.
+            CORPO=$(curl -s -m 30 -w "\n%{http_code}" \
+              "$URL/rest/v1/configuracoes?select=id&limit=1" \
+              -H "apikey: $CHAVE" -H "Authorization: Bearer $CHAVE" || true)
+            STATUS=$(echo "$CORPO" | tail -n1)
+            echo "Tentativa $tentativa: resposta $STATUS"
+            if [ "$STATUS" = "200" ] || echo "$CORPO" | grep -q '"42501"'; then
+              echo "Supabase acordado ✅"; exit 0
+            fi
+            sleep 20
+          done
+          echo "O Supabase não respondeu. Ele pode estar PAUSADO: entre no painel e clique em Restore."
+          exit 1

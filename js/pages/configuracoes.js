@@ -79,8 +79,10 @@ export async function render(el) {
 
     <div class="card">
       <h2>💾 Backup</h2>
-      <p>Baixa todos os dados em arquivos CSV (abrem no Excel). Guarde em local seguro: contém dados de saúde (LGPD).</p>
-      <button class="btn btn-sec btn-grande" data-backup>⬇ Exportar todos os dados</button>
+      <p>Baixa <strong>um arquivo .zip</strong> com todos os dados (planilhas que abrem no Excel) e as fotos das campanhas.
+        Guarde em local seguro (ex.: pasta do OneDrive): contém dados de saúde (LGPD).</p>
+      ${avisoUltimoBackup()}
+      <button class="btn btn-primario btn-grande" data-backup>⬇ Baixar backup completo</button>
       <a class="btn btn-sec btn-grande" href="#/importar">📥 Importar clientes (CSV)</a>
     </div>`;
 
@@ -207,20 +209,87 @@ async function buscarTudo(tabela) {
   }
 }
 
+// Data do último backup feito NESTE aparelho (só para lembrar a pessoa)
+const CHAVE_ULTIMO_BACKUP = 'farmalembra-ultimo-backup';
+const DIAS_PARA_LEMBRAR = 7;
+
+function lerUltimoBackup() {
+  try { return localStorage.getItem(CHAVE_ULTIMO_BACKUP); } catch (_) { return null; }
+}
+
+function avisoUltimoBackup() {
+  const ultimo = lerUltimoBackup();
+  if (!ultimo) {
+    return '<p class="aviso">⚠️ Nenhum backup feito neste aparelho ainda. Recomendado: 1 vez por semana.</p>';
+  }
+  const dias = Math.floor((Date.now() - new Date(ultimo).getTime()) / 86400000);
+  const quando = dias === 0 ? 'hoje' : dias === 1 ? 'ontem' : `há ${dias} dias`;
+  return dias >= DIAS_PARA_LEMBRAR
+    ? `<p class="aviso">⚠️ Último backup ${quando} (${formatarDataHora(ultimo)}). Que tal fazer um agora?</p>`
+    : `<p class="aviso ok">✅ Último backup ${quando} (${formatarDataHora(ultimo)}).</p>`;
+}
+
+const TABELAS_BACKUP = [
+  'clientes', 'medicamentos_continuos', 'compras', 'lembretes',
+  'campanhas', 'campanha_envios', 'modelos_mensagem', 'configuracoes', 'perfis',
+];
+
+/** Um arquivo .zip com todas as tabelas (CSV) + fotos das campanhas */
 async function backup() {
-  const tabelas = ['clientes', 'medicamentos_continuos', 'compras', 'lembretes', 'campanhas', 'campanha_envios', 'modelos_mensagem'];
   try {
-    for (const t of tabelas) {
+    // Biblioteca de .zip com versão FIXA (só carrega quando clica no botão)
+    const { default: JSZip } = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+    const zip = new JSZip();
+    const resumo = [];
+    let campanhas = [];
+
+    for (const t of TABELAS_BACKUP) {
       const linhas = await buscarTudo(t);
+      if (t === 'campanhas') campanhas = linhas;
+      resumo.push(`${t}: ${linhas.length} linha(s)`);
       if (!linhas.length) continue;
       const colunas = Object.keys(linhas[0]).map((k) => ({
-        chave: k, titulo: k, formatar: (v) => (Array.isArray(v) ? v.join(', ') : v),
+        chave: k, titulo: k,
+        formatar: (v) => (Array.isArray(v) ? v.join(', ') : v && typeof v === 'object' ? JSON.stringify(v) : v),
       }));
-      baixarArquivo(`backup-${t}-${hojeISO()}.csv`, gerarCSV(linhas, colunas));
-      await new Promise((r) => setTimeout(r, 400)); // o navegador baixa um por vez
+      zip.file(`${t}.csv`, gerarCSV(linhas, colunas));
     }
-    toast('Backup exportado! Confira a pasta Downloads.');
+
+    // Fotos das campanhas (links públicos do Storage)
+    const links = new Set();
+    for (const c of campanhas) {
+      (c.imagens || []).forEach((u) => u && links.add(u));
+      if (c.imagem_url) links.add(c.imagem_url);
+    }
+    let fotos = 0;
+    let falhas = 0;
+    for (const url of links) {
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(String(r.status));
+        const resto = new URL(url).pathname.split('/object/public/campanhas/')[1];
+        zip.file(`fotos-campanhas/${resto ? decodeURIComponent(resto) : `foto-${fotos + 1}.jpg`}`, await r.blob());
+        fotos++;
+      } catch (_) { falhas++; }
+    }
+    resumo.push(`fotos das campanhas: ${fotos}${falhas ? ` (${falhas} não baixaram)` : ''}`);
+
+    zip.file('LEIA-ME.txt', [
+      `Backup do FarmaLembra — ${formatarDataHora(new Date().toISOString())}`,
+      '',
+      'Cada arquivo .csv é uma tabela do sistema e abre no Excel.',
+      'A pasta fotos-campanhas tem as imagens usadas nas campanhas.',
+      'ATENÇÃO: contém dados pessoais e de saúde dos clientes (LGPD). Guarde em local seguro.',
+      '',
+      ...resumo,
+    ].join('\r\n'));
+
+    const arquivo = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    baixarArquivo(`backup-farmalembra-${hojeISO()}.zip`, arquivo, 'application/zip');
+    try { localStorage.setItem(CHAVE_ULTIMO_BACKUP, new Date().toISOString()); } catch (_) { /* sem armazenamento */ }
+    toast('Backup baixado! Confira a pasta Downloads.' + (falhas ? ` (${falhas} foto(s) não baixaram)` : ''));
+    recarregar();
   } catch (e) {
-    mostrarErro(e, 'Não foi possível exportar.');
+    mostrarErro(e, 'Não foi possível fazer o backup.');
   }
 }
