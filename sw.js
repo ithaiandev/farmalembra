@@ -3,7 +3,7 @@
 // Estratégia: sempre busca a versão nova na internet; se estiver sem
 // internet, usa a cópia guardada. (Os dados do Supabase nunca são guardados.)
 // =====================================================================
-const CACHE = 'farmalembra-v10';
+const CACHE = 'farmalembra-v11';
 
 const ARQUIVOS = [
   './', 'index.html', 'app.html', 'privacidade.html', 'promo.html', 'manifest.json',
@@ -11,6 +11,7 @@ const ARQUIVOS = [
   'js/config.js', 'js/supabase.js', 'js/auth.js', 'js/router.js', 'js/utils.js',
   'js/ui.js', 'js/store.js', 'js/fila.js', 'js/mensagens.js', 'js/imagens.js',
   'js/inicio.js', 'js/entrar.js', 'js/app.js', 'js/promo.js', 'js/privacidade.js',
+  'js/campanhas-comum.js', 'js/envio-campanha.js',
 ];
 
 self.addEventListener('install', (e) => {

@@ -149,6 +149,8 @@ const STATUS = {
   sem_retorno: ['Sem retorno', 'cinza'],
   cancelado: ['Cancelado', 'cinza'],
   rascunho: ['Rascunho', 'cinza'],
+  ativa: ['Ativa', 'verde'],
+  encerrada: ['Encerrada', 'amarelo'],
   enviando: ['Enviando', 'amarelo'],
   concluida: ['Concluída', 'verde'],
   pulado: ['Pulado', 'cinza'],

@@ -231,7 +231,8 @@ function avisoUltimoBackup() {
 
 const TABELAS_BACKUP = [
   'clientes', 'medicamentos_continuos', 'compras', 'lembretes',
-  'campanhas', 'campanha_envios', 'modelos_mensagem', 'configuracoes', 'perfis',
+  'campanhas', 'campanha_envios', 'campanha_disparos', 'campanha_disparo_clientes',
+  'modelos_mensagem', 'configuracoes', 'perfis',
 ];
 
 /** Um arquivo .zip com todas as tabelas (CSV) + fotos das campanhas */

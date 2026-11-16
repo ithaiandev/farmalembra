@@ -1,6 +1,6 @@
 // Painel inicial: números do dia, ações rápidas e aniversariantes
 import { supabase } from '../supabase.js';
-import { sessao } from '../auth.js';
+import { sessao, ehAdmin } from '../auth.js';
 import { mostrarErro, htmlVazio } from '../ui.js';
 import { esc, hojeISO, formatarData, formatarTelefone, linkWhatsApp, primeiroNome } from '../utils.js';
 import { mensagemPorTipo } from '../mensagens.js';
@@ -33,7 +33,7 @@ export async function render(el) {
       <a href="#/lembretes?fila=1" class="btn btn-whats btn-grande">🔔 Enviar lembretes de hoje (${r.hoje})</a>
       <a href="#/balcao" class="btn btn-primario btn-grande">🛒 Registrar compra</a>
       <a href="#/clientes/novo" class="btn btn-sec btn-grande">➕ Novo cliente</a>
-      <a href="#/campanhas/nova" class="btn btn-sec btn-grande">📣 Nova campanha / promoção</a>
+      ${ehAdmin() ? '<a href="#/campanhas/nova" class="btn btn-sec btn-grande">📣 Nova campanha</a>' : '<a href="#/campanhas" class="btn btn-sec btn-grande">📣 Campanhas</a>'}
     </div>
 
     <div class="grade-cards">

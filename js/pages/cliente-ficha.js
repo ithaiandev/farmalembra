@@ -56,7 +56,11 @@ export async function render(el, { params, query }) {
         ${c.cpf ? `<dt>CPF</dt><dd>${esc(c.cpf)}</dd>` : ''}
         ${c.endereco || c.bairro ? `<dt>Endereço</dt><dd>${esc([c.endereco, c.bairro].filter(Boolean).join(' – '))}</dd>` : ''}
         ${c.observacoes ? `<dt>Observações</dt><dd>${esc(c.observacoes)}</dd>` : ''}
-        <dt>Autorização</dt><dd>${c.consentimento_em ? `sim, em ${formatarDataHora(c.consentimento_em)}` : 'não autorizou'}</dd>
+        <dt>Lembretes</dt><dd>${c.consentimento_em ? `autorizou em ${formatarDataHora(c.consentimento_em)}` : 'não autorizou'}</dd>
+        <dt>Campanhas</dt><dd>${c.consentimento_publicidade
+          ? `autorizou em ${formatarDataHora(c.consentimento_publicidade_em)}`
+          : 'não autorizou'}
+          ${c.opt_out ? '' : `<button type="button" class="btn btn-link btn-pequeno" data-publicidade>${c.consentimento_publicidade ? 'retirar autorização' : 'registrar autorização'}</button>`}</dd>
         ${c.opt_out ? `<dt>Pediu SAIR</dt><dd>${formatarDataHora(c.opt_out_em)}</dd>` : ''}
         <dt>Cadastrado</dt><dd>${formatarDataHora(c.criado_em)}${c.criado_por_perfil?.nome ? ` por ${esc(c.criado_por_perfil.nome)}` : ''}</dd>
       </dl>
@@ -104,12 +108,12 @@ export async function render(el, { params, query }) {
           </div>${badgeStatus(l.status)}</li>`).join('')}</ul>`
           : htmlVazio('Nenhum lembrete ainda.', '🔔')}
 
-        <h2 style="margin-top:18px">📣 Campanhas recebidas</h2>
+        <h2 style="margin-top:18px">📣 Campanhas (envios registrados)</h2>
         ${(envios.data || []).length ? `<ul class="lista">${envios.data.map((v) => `
           <li class="item"><div class="item-principal">
-            <div class="item-titulo">${esc(v.campanhas?.titulo)}</div>
+            <div class="item-titulo"><a href="#/campanhas/${v.campanha_id}">${esc(v.campanhas?.titulo)}</a></div>
             <div class="item-sub">${formatarDataHora(v.enviado_em)}</div>
-          </div>${badgeStatus(v.status)}</li>`).join('')}</ul>`
+          </div>${v.status === 'enviado' ? '<span class="badge badge-azul" title="Registro interno; a entrega não é confirmada">Registrado</span>' : badgeStatus(v.status)}</li>`).join('')}</ul>`
           : htmlVazio('Nenhuma campanha recebida.', '📣')}
       </div>
     </div>
@@ -215,6 +219,27 @@ export async function render(el, { params, query }) {
       .update({ opt_out: false, consentimento_whatsapp: true }).eq('id', c.id);
     if (error) return mostrarErro(error);
     toast('Autorização registrada.');
+    recarregar();
+  });
+
+  // ---- Autorização de campanhas (publicidade), separada dos lembretes -----
+  el.querySelector('[data-publicidade]')?.addEventListener('click', async () => {
+    const autorizar = !c.consentimento_publicidade;
+    const ok = await confirmar(autorizar
+      ? {
+        titulo: 'Autorizar campanhas',
+        mensagem: `Confirme que ${c.nome} autorizou receber promoções e campanhas da farmácia pelo WhatsApp.`,
+        botao: 'Cliente autorizou',
+      }
+      : {
+        titulo: 'Retirar autorização de campanhas',
+        mensagem: `${c.nome} deixa de receber campanhas. Os lembretes de compra continuam, se autorizados.`,
+        botao: 'Retirar', perigo: true,
+      });
+    if (!ok) return;
+    const { error } = await supabase.from('clientes').update({ consentimento_publicidade: autorizar }).eq('id', c.id);
+    if (error) return mostrarErro(error);
+    toast(autorizar ? 'Autorização de campanhas registrada.' : 'Autorização de campanhas retirada.');
     recarregar();
   });
 

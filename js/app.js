@@ -18,13 +18,19 @@ document.querySelector('[data-tema]').addEventListener('click', () => {
 document.querySelectorAll('[data-sair]').forEach((b) => b.addEventListener('click', sair));
 
 if (await exigirLogin()) {
+  const nome = sessao.perfil.nome || sessao.user.email;
   document.querySelector('[data-usuario]').innerHTML =
-    `${esc(sessao.perfil.nome || sessao.user.email)}<br><small>${ehAdmin() ? 'Administrador' : 'Atendente'}</small>`;
+    `<strong>${esc(nome)}</strong><small>${ehAdmin() ? 'Administrador' : 'Atendente'}</small>`;
+  document.querySelectorAll('[data-avatar]').forEach((el) => {
+    el.textContent = String(nome).trim().charAt(0).toUpperCase();
+    el.title = nome;
+  });
   if (!ehAdmin()) document.querySelectorAll('[data-so-admin]').forEach((el) => el.remove());
 
-  // Nome da farmácia aparece embaixo da marca (vem das Configurações)
+  // Nome da farmácia aparece como marca no menu (vem das Configurações)
   obterConfig().then((cfg) => {
-    document.querySelector('[data-nome-farmacia]').textContent = cfg.nome_farmacia;
+    if (!cfg.nome_farmacia || ['Minha Farmácia', 'a farmácia'].includes(cfg.nome_farmacia)) return;
+    document.querySelectorAll('[data-nome-farmacia]').forEach((el) => { el.textContent = cfg.nome_farmacia; });
   }).catch(() => {});
 
   iniciarRouter(document.getElementById('conteudo'));

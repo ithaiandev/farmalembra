@@ -14,7 +14,8 @@ const ROTAS = [
   { padrao: '/clientes/:id', pagina: 'cliente-ficha', titulo: 'Ficha do cliente' },
   { padrao: '/lembretes', pagina: 'lembretes', titulo: 'Lembretes' },
   { padrao: '/campanhas', pagina: 'campanhas', titulo: 'Campanhas' },
-  { padrao: '/campanhas/nova', pagina: 'campanha', titulo: 'Nova campanha' },
+  { padrao: '/campanhas/nova', pagina: 'campanha-form', titulo: 'Nova campanha', admin: true },
+  { padrao: '/campanhas/:id/editar', pagina: 'campanha-form', titulo: 'Editar campanha', admin: true },
   { padrao: '/campanhas/:id', pagina: 'campanha', titulo: 'Campanha' },
   { padrao: '/modelos', pagina: 'modelos', titulo: 'Modelos de mensagem' },
   { padrao: '/relatorios', pagina: 'relatorios', titulo: 'Relatórios' },
@@ -71,6 +72,9 @@ async function renderizar() {
   }
 
   document.title = `${achou.rota.titulo} · FarmaLembra`;
+  const tituloTopo = document.querySelector('[data-titulo-pagina]');
+  if (tituloTopo) tituloTopo.textContent = achou.rota.titulo;
+  document.body.classList.remove('menu-aberto');
   folha.innerHTML = htmlCarregando();
   try {
     const modulo = await import(`./pages/${achou.rota.pagina}.js`);

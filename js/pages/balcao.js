@@ -92,8 +92,13 @@ function passoNovoCliente(el, telefone) {
         <input name="nome" required autocomplete="off" autocapitalize="words"></label>
       <label class="checkbox destaque">
         <input type="checkbox" name="consentimento">
-        <span>Cliente autorizou receber mensagens pelo WhatsApp (LGPD)
-          <small>Pergunte: "Posso te avisar pelo WhatsApp quando seu remédio estiver acabando?"</small></span>
+        <span>Autorizou receber lembretes de compra pelo WhatsApp (LGPD)
+          <small>Pergunte: "Posso te avisar pelo WhatsApp quando estiver chegando a época da próxima compra?"</small></span>
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" name="publicidade">
+        <span>Autorizou receber promoções e campanhas (opcional)
+          <small>Pergunte separado: "E posso mandar nossas promoções de vez em quando?"</small></span>
       </label>
       <div class="acoes-modal">
         <button type="button" class="btn btn-sec" data-voltar>← Voltar</button>
@@ -110,7 +115,11 @@ function passoNovoCliente(el, telefone) {
     if (!nome) return toast('Informe o nome.', 'erro');
     await comBotaoOcupado(form.querySelector('button:not([data-voltar])'), async () => {
       const { data, error } = await supabase.from('clientes')
-        .insert({ nome, telefone, consentimento_whatsapp: form.consentimento.checked })
+        .insert({
+          nome, telefone,
+          consentimento_whatsapp: form.consentimento.checked,
+          consentimento_publicidade: form.publicidade.checked,
+        })
         .select('*').single();
       if (error) return mostrarErro(error);
       toast('Cliente cadastrado!');

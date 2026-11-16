@@ -52,9 +52,15 @@ export async function render(el, { params }) {
 
       <label class="checkbox destaque">
         <input type="checkbox" name="consentimento_whatsapp" ${c.consentimento_whatsapp ? 'checked' : ''}>
-        <span>Cliente autorizou receber mensagens pelo WhatsApp (LGPD)
-          <small>Obrigatório para enviar lembretes e campanhas. Pergunte ao cliente antes de marcar.
+        <span>Autorizou receber <u>lembretes de compra</u> pelo WhatsApp (LGPD)
+          <small>Avisos de que está chegando a época da próxima compra. Pergunte ao cliente antes de marcar.
           ${c.consentimento_em ? `Autorizado em ${new Date(c.consentimento_em).toLocaleDateString('pt-BR')}.` : ''}</small></span>
+      </label>
+      <label class="checkbox destaque">
+        <input type="checkbox" name="consentimento_publicidade" ${c.consentimento_publicidade ? 'checked' : ''}>
+        <span>Autorizou receber <u>promoções e campanhas</u> pelo WhatsApp (LGPD)
+          <small>Autorização separada. Sem ela, o cliente não aparece no público das campanhas.
+          ${c.consentimento_publicidade_em ? `Autorizado em ${new Date(c.consentimento_publicidade_em).toLocaleDateString('pt-BR')}.` : ''}</small></span>
       </label>
       ${c.opt_out ? '<div class="aviso">🚫 Este cliente pediu para NÃO receber mensagens. Para voltar a enviar, use o botão na ficha do cliente.</div>' : ''}
 
@@ -128,6 +134,7 @@ export async function render(el, { params }) {
       nome: d.nome,
       telefone,
       consentimento_whatsapp: form.consentimento_whatsapp.checked,
+      consentimento_publicidade: form.consentimento_publicidade.checked,
       tags: [...tagsBox.querySelectorAll('[data-tag][aria-pressed="true"]')].map((b) => b.dataset.tag),
       data_nascimento: d.data_nascimento || null,
       cpf: d.cpf || null,

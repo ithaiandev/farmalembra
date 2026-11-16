@@ -7,7 +7,7 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>FarmaLembra</title>
-  <meta name="theme-color" content="#0b63c5">
+  <meta name="theme-color" content="#0a8a4c">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="img/icone-192.png">
@@ -16,47 +16,83 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="js/inicio.js"></script>
 </head>
-<body>
-  <header class="topo">
-    <a class="marca" href="#/painel" aria-label="FarmaLembra — início">
+<body class="app">
+  <!-- Ícones (desenhados uma vez e reaproveitados com <use>) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-painel" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+      <symbol id="i-compra" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.2a1 1 0 0 0 1 .8h9.7a1 1 0 0 0 1-.8L21 7H6"/></symbol>
+      <symbol id="i-clientes" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20.5v-.5a6 6 0 0 1 6-6h1a6 6 0 0 1 6 6v.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20.5v-.5a5 5 0 0 0-3.5-4.8"/></symbol>
+      <symbol id="i-lembretes" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6.5 2.5 8.5 2.5 8.5h-17S6 15.5 6 9"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+      <symbol id="i-campanhas" viewBox="0 0 24 24"><path d="M3.5 10.5v3a1 1 0 0 0 1 1H7l7 4.5v-14L7 9.5H4.5a1 1 0 0 0-1 1z"/><path d="M17.5 8.5a4.5 4.5 0 0 1 0 7M7.5 14.5l1 5"/></symbol>
+      <symbol id="i-modelos" viewBox="0 0 24 24"><path d="M14 3H6.5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V7.5z"/><path d="M14 3v4.5h4.5M9 12.5h6M9 16.5h6"/></symbol>
+      <symbol id="i-relatorios" viewBox="0 0 24 24"><path d="M4 20V11M10 20V5M16 20v-6M21.5 20.5h-19"/></symbol>
+      <symbol id="i-config" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></symbol>
+      <symbol id="i-importar" viewBox="0 0 24 24"><path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5"/><path d="M4 16.5v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+      <symbol id="i-privacidade" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-sair" viewBox="0 0 24 24"><path d="M14.5 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 8l-4 4 4 4M6 12h11"/></symbol>
+      <symbol id="i-mais" viewBox="0 0 24 24"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></symbol>
+      <symbol id="i-tema" viewBox="0 0 24 24"><path d="M20.5 14A8.5 8.5 0 1 1 10 3.5a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- Menu lateral (computador) -->
+  <aside class="sidebar" aria-label="Menu principal">
+    <a class="sidebar-marca" href="#/painel" aria-label="Ir para o painel">
       <img src="img/logo.svg" alt="">
       <span class="marca-texto">
-        <strong class="wordmark">Farma<span>Lembra</span></strong>
-        <small data-nome-farmacia></small>
+        <strong data-nome-farmacia>FarmaLembra</strong>
+        <small>Fidelização &amp; relacionamento</small>
       </span>
     </a>
-    <span class="espaco"></span>
-    <span class="usuario" data-usuario></span>
-    <button type="button" class="btn-icone" data-tema title="Modo claro/escuro" aria-label="Alternar modo escuro">🌓</button>
-  </header>
 
-  <div class="layout">
-    <!-- Menu do computador -->
-    <nav class="menu-lateral" aria-label="Menu principal">
-      <a href="#/painel" data-rota="/painel">🏠 Painel</a>
-      <a href="#/balcao" data-rota="/balcao">🛒 Registrar compra</a>
-      <a href="#/clientes" data-rota="/clientes">👥 Clientes</a>
-      <a href="#/lembretes" data-rota="/lembretes">🔔 Lembretes</a>
-      <a href="#/campanhas" data-rota="/campanhas">📣 Campanhas</a>
-      <a href="#/modelos" data-rota="/modelos">📝 Modelos de mensagem</a>
-      <a href="#/relatorios" data-rota="/relatorios">📊 Relatórios</a>
-      <a href="#/configuracoes" data-rota="/configuracoes" data-so-admin>⚙️ Configurações</a>
-      <a href="#/importar" data-rota="/importar" data-so-admin>📥 Importar CSV</a>
-      <hr>
-      <a href="privacidade.html" target="_blank" rel="noopener">🔒 Política de Privacidade</a>
-      <button type="button" data-sair>🚪 Sair</button>
+    <nav class="sidebar-nav">
+      <span class="sidebar-grupo">Operação</span>
+      <a href="#/painel" data-rota="/painel"><svg class="ico"><use href="#i-painel"/></svg>Painel</a>
+      <a href="#/balcao" data-rota="/balcao"><svg class="ico"><use href="#i-compra"/></svg>Registrar compra</a>
+      <a href="#/clientes" data-rota="/clientes"><svg class="ico"><use href="#i-clientes"/></svg>Clientes</a>
+      <a href="#/lembretes" data-rota="/lembretes"><svg class="ico"><use href="#i-lembretes"/></svg>Lembretes</a>
+
+      <span class="sidebar-grupo">Relacionamento</span>
+      <a href="#/campanhas" data-rota="/campanhas"><svg class="ico"><use href="#i-campanhas"/></svg>Campanhas</a>
+      <a href="#/modelos" data-rota="/modelos"><svg class="ico"><use href="#i-modelos"/></svg>Modelos de mensagem</a>
+
+      <span class="sidebar-grupo">Gestão</span>
+      <a href="#/relatorios" data-rota="/relatorios"><svg class="ico"><use href="#i-relatorios"/></svg>Relatórios</a>
+      <a href="#/configuracoes" data-rota="/configuracoes" data-so-admin><svg class="ico"><use href="#i-config"/></svg>Configurações</a>
+      <a href="#/importar" data-rota="/importar" data-so-admin><svg class="ico"><use href="#i-importar"/></svg>Importar CSV</a>
+      <a href="privacidade.html" target="_blank" rel="noopener"><svg class="ico"><use href="#i-privacidade"/></svg>Política de Privacidade</a>
     </nav>
+
+    <div class="sidebar-usuario">
+      <span class="avatar avatar-pequeno" data-avatar aria-hidden="true"></span>
+      <span class="sidebar-usuario-texto" data-usuario></span>
+      <button type="button" class="btn-icone" data-sair title="Sair" aria-label="Sair"><svg class="ico"><use href="#i-sair"/></svg></button>
+    </div>
+  </aside>
+
+  <div class="area">
+    <header class="topo">
+      <a class="topo-marca" href="#/painel" aria-label="Ir para o painel">
+        <img src="img/logo.svg" alt="">
+        <strong data-nome-farmacia>FarmaLembra</strong>
+      </a>
+      <span class="topo-titulo" data-titulo-pagina></span>
+      <span class="espaco"></span>
+      <button type="button" class="btn-icone" data-tema title="Modo claro/escuro" aria-label="Alternar modo escuro"><svg class="ico"><use href="#i-tema"/></svg></button>
+      <span class="avatar avatar-pequeno topo-avatar" data-avatar aria-hidden="true"></span>
+    </header>
 
     <main id="conteudo"></main>
   </div>
 
   <!-- Menu do celular -->
   <nav class="menu-inferior" aria-label="Menu">
-    <a href="#/painel" data-rota="/painel"><span class="ic">🏠</span>Painel</a>
-    <a href="#/balcao" data-rota="/balcao"><span class="ic">🛒</span>Compra</a>
-    <a href="#/clientes" data-rota="/clientes"><span class="ic">👥</span>Clientes</a>
-    <a href="#/lembretes" data-rota="/lembretes"><span class="ic">🔔</span>Lembretes</a>
-    <a href="#/mais" data-rota="/mais"><span class="ic">☰</span>Mais</a>
+    <a href="#/painel" data-rota="/painel"><svg class="ico"><use href="#i-painel"/></svg>Painel</a>
+    <a href="#/balcao" data-rota="/balcao"><svg class="ico"><use href="#i-compra"/></svg>Compra</a>
+    <a href="#/clientes" data-rota="/clientes"><svg class="ico"><use href="#i-clientes"/></svg>Clientes</a>
+    <a href="#/lembretes" data-rota="/lembretes"><svg class="ico"><use href="#i-lembretes"/></svg>Lembretes</a>
+    <a href="#/mais" data-rota="/mais"><svg class="ico"><use href="#i-mais"/></svg>Mais</a>
   </nav>
 
   <div id="toasts" aria-live="polite"></div>

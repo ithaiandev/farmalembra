@@ -1,18 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- FarmaLembra: cápsula de remédio + selo de lembrete -->
+  <!-- FarmaLembra: cruz da farmácia + selo azul de lembrete -->
   <defs>
     <linearGradient id="fundo" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0b63c5"/>
-      <stop offset="1" stop-color="#0a8f6a"/>
+      <stop offset="0" stop-color="#12a35c"/>
+      <stop offset="1" stop-color="#076a3a"/>
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#fundo)"/>
-  <g transform="rotate(-45 236 276)">
-    <rect x="96" y="216" width="280" height="120" rx="60" fill="#ffffff"/>
-    <path d="M236 216h80a60 60 0 0 1 0 120h-80z" fill="#b8f0d2"/>
-    <line x1="236" y1="216" x2="236" y2="336" stroke="#0b63c5" stroke-width="10"/>
-  </g>
-  <circle cx="384" cy="128" r="64" fill="#ffb020" stroke="#ffffff" stroke-width="16"/>
-  <path d="M384 98v34" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
-  <circle cx="384" cy="156" r="9" fill="#ffffff"/>
+  <path d="M206 112h100a14 14 0 0 1 14 14v80h80a14 14 0 0 1 14 14v100a14 14 0 0 1-14 14h-80v80a14 14 0 0 1-14 14H206a14 14 0 0 1-14-14v-80h-80a14 14 0 0 1-14-14V220a14 14 0 0 1 14-14h80v-80a14 14 0 0 1 14-14z" fill="#ffffff"/>
+  <path d="M232 270l24 24 48-52" fill="none" stroke="#0a8a4c" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="400" cy="112" r="62" fill="#1f6fd1" stroke="#ffffff" stroke-width="16"/>
+  <path d="M376 112a24 24 0 0 1 48 0c0 18 8 24 8 24h-64s8-6 8-24" fill="#ffffff"/>
+  <circle cx="400" cy="146" r="8" fill="#ffffff"/>
 </svg>

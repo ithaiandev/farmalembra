@@ -72,6 +72,23 @@ export async function removerImagem(url) {
 }
 
 /**
+ * Copia uma imagem do Storage para um arquivo novo e devolve o link da cópia.
+ * Usado ao duplicar campanha: cada campanha fica com as suas imagens, então
+ * excluir uma não apaga as fotos da outra. Links de fora do Storage voltam iguais.
+ */
+export async function copiarImagem(url) {
+  const marca = `/storage/v1/object/public/${PASTA}/`;
+  const i = url ? url.indexOf(marca) : -1;
+  if (i < 0) return url;
+  const origem = decodeURIComponent(url.slice(i + marca.length));
+  const ext = (origem.match(/\.(\w+)$/) || [, 'jpg'])[1];
+  const destino = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(PASTA).copy(origem, destino);
+  if (error) throw error;
+  return supabase.storage.from(PASTA).getPublicUrl(destino).data.publicUrl;
+}
+
+/**
  * Atualiza a "capa" usada na prévia do link no WhatsApp (arquivo campanhas/capa.jpg).
  * A página promo.html aponta para essa capa (og:image). A capa tem sempre
  * 1200×630 (formato da prévia GRANDE do WhatsApp): a foto inteira fica no

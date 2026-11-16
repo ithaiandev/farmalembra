@@ -18,7 +18,10 @@ import { esc, formatarTelefone, linkWhatsApp } from './utils.js';
  * })
  * Resolve com { enviados, pulados, outros } quando a fila fecha.
  */
-export function abrirFila({ titulo, itens, montar, aoEnviar, extras = [], jaEnviados = 0, total = null }) {
+export function abrirFila({
+  titulo, itens, montar, aoEnviar, extras = [], jaEnviados = 0, total = null,
+  rotuloFeitos = 'enviados', // campanhas: 'WhatsApp abertos' (não dá para confirmar o envio)
+}) {
   const fila = [...itens];
   const totalGeral = total ?? fila.length + jaEnviados;
   const placar = { enviados: 0, pulados: 0, outros: 0 };
@@ -37,7 +40,7 @@ export function abrirFila({ titulo, itens, montar, aoEnviar, extras = [], jaEnvi
           <div class="fila-fim">
             <div class="vazio-icone">🎉</div>
             <h3>Fila concluída!</h3>
-            <p>Enviados agora: <strong>${placar.enviados}</strong>
+            <p>${esc(rotuloFeitos.charAt(0).toUpperCase() + rotuloFeitos.slice(1))} agora: <strong>${placar.enviados}</strong>
                · Pulados: <strong>${placar.pulados}</strong>
                ${placar.outros ? ` · Outras ações: <strong>${placar.outros}</strong>` : ''}</p>
             <button type="button" class="btn btn-primario btn-grande" data-ok>Fechar</button>
@@ -61,7 +64,7 @@ export function abrirFila({ titulo, itens, montar, aoEnviar, extras = [], jaEnvi
         area.innerHTML = `
           <div class="fila-progresso">
             <div class="barra"><div class="barra-preenchida" style="width:${pct}%"></div></div>
-            <span>${feitos}/${totalGeral} enviados · faltam ${fila.length + 1}</span>
+            <span>${feitos}/${totalGeral} ${esc(rotuloFeitos)} · faltam ${fila.length + 1}</span>
           </div>
           <div class="fila-cliente">
             <div class="fila-nome">${esc(dadosAtuais.nome)}</div>

@@ -5,9 +5,9 @@ import {
   esc, lerCSV, lerData, normalizarTelefone, formatarTelefone, formatarData, baixarArquivo, hojeISO,
 } from '../utils.js';
 
-const MODELO_CSV = '﻿nome;telefone;medicamento;ultima_compra;duracao_dias;data_nascimento;consentimento\r\n'
-  + 'Maria da Silva;(98) 9 9999-0001;Losartana 50mg;15/10/2026;30;10/05/1960;sim\r\n'
-  + 'João Souza;98999990002;Metformina 850mg;01/10/2026;30;;nao\r\n';
+const MODELO_CSV = '﻿nome;telefone;medicamento;ultima_compra;duracao_dias;data_nascimento;consentimento;publicidade\r\n'
+  + 'Maria da Silva;(98) 9 9999-0001;Losartana 50mg;15/10/2026;30;10/05/1960;sim;sim\r\n'
+  + 'João Souza;98999990002;Metformina 850mg;01/10/2026;30;;nao;nao\r\n';
 
 export async function render(el) {
   el.innerHTML = `
@@ -19,7 +19,7 @@ export async function render(el) {
       <ul>
         <li><strong>nome</strong> e <strong>telefone</strong> (obrigatórias)</li>
         <li>medicamento, ultima_compra (dd/mm/aaaa), duracao_dias (padrão 30)</li>
-        <li>data_nascimento, consentimento (sim/não)</li>
+        <li>data_nascimento, consentimento (sim/não — lembretes), publicidade (sim/não — campanhas)</li>
       </ul>
       <p class="suave pequeno">Telefones repetidos não são duplicados: o medicamento é adicionado ao cliente que já existe.</p>
       <button class="btn btn-sec" data-modelo>⬇ Baixar planilha modelo</button>
@@ -31,6 +31,8 @@ export async function render(el) {
           <small>Só marque se for verdade (LGPD). Sem autorização, o cliente é importado mas não recebe lembretes.
           A coluna "consentimento" do arquivo, se existir, também vale.</small></span>
       </label>
+      <p class="suave pequeno">Campanhas e promoções exigem autorização separada: use a coluna <strong>publicidade</strong>
+        (sim/não) ou registre depois na ficha de cada cliente.</p>
     </div>
     <div data-previa></div>`;
 
@@ -70,6 +72,7 @@ function previa(el, linhas) {
       duracao_dias: Math.min(365, Math.max(1, parseInt(l.duracao_dias || l.dias, 10) || 30)),
       data_nascimento: lerData(l.data_nascimento || l.nascimento),
       consentimento: sim(l.consentimento || l.autorizou),
+      publicidade: sim(l.publicidade || l.campanhas || l.promocoes),
     });
   }
 
@@ -120,6 +123,7 @@ async function importar(el, linhas) {
       novos.push({
         nome: l.nome, telefone: l.telefone, data_nascimento: l.data_nascimento,
         consentimento_whatsapp: consentTodos || l.consentimento,
+        consentimento_publicidade: l.publicidade,
       });
     }
     for (let i = 0; i < novos.length; i += 100) {
