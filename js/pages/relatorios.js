@@ -89,7 +89,7 @@ export async function render(el) {
             <div class="item-titulo"><a href="#/clientes/${s.id}">${esc(s.nome)}</a></div>
             <div class="item-sub">${esc(formatarTelefone(s.telefone))} · última compra ${formatarData(s.ultima_compra)} (${s.dias_sem_comprar} dias)</div>
           </div>
-          ${s.pode_receber ? `<a class="btn btn-whats btn-pequeno" target="_blank" rel="noopener" href="${linkWhatsApp(s.telefone)}">💬 Conversar</a>`
+          ${s.pode_receber ? `<a class="btn btn-whats btn-pequeno" target="_blank" rel="noopener" href="${linkWhatsApp(s.telefone)}">Conversar</a>`
             : '<span class="badge badge-amarelo">Sem autorização</span>'}
         </li>`).join('')}</ul>` : htmlVazio('Nenhum cliente sumido. Ótimo sinal! 🎉', '😊')}
     </div>`;

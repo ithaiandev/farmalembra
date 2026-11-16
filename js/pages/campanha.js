@@ -14,9 +14,10 @@ import { esc, formatarData, formatarDataHora, formatarTelefone, hojeISO, baixarA
 import { previaMensagem } from '../mensagens.js';
 import { copiarImagem, removerImagem, baixarComoArquivo } from '../imagens.js';
 import { abrirEnvioCampanha } from '../envio-campanha.js';
+import { buscarElegiveisPorIds } from '../componentes/seletor-clientes.js';
 import {
   badgeSituacao, situacao, podeEnviar, motivoNaoEnviar, textoPeriodo, descreverPublico,
-  parametrosPublico, imagensDe, rodapeImagens, mensagemParaTodos, copiarTexto,
+  carregarSelecao, imagensDe, rodapeImagens, mensagemParaTodos, copiarTexto,
 } from '../campanhas-comum.js';
 
 const CANAIS = {
@@ -42,7 +43,7 @@ export async function render(el, { params }) {
       .eq('campanha_id', camp.id).order('criado_em', { ascending: false }).limit(50),
     supabase.from('campanha_envios').select('id', { count: 'exact', head: true })
       .eq('campanha_id', camp.id).eq('status', 'enviado'),
-    supabase.rpc('clientes_publico', parametrosPublico(camp)).select('id'),
+    carregarSelecao(camp, { supabase, buscarElegiveisPorIds }).then((s) => s.marcados.size, () => null),
     camp.origem_id
       ? supabase.from('campanhas').select('id, titulo').eq('id', camp.origem_id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -58,7 +59,7 @@ export async function render(el, { params }) {
     (data || []).forEach((p) => { nomes[p.id] = p.nome; });
   }
 
-  const publicoHoje = publicoRes.error ? null : publicoRes.data.length;
+  const publicoHoje = publicoRes;
   const registrados = registradosRes.count ?? 0;
   const ultimo = disparos[0]?.criado_em;
 
@@ -81,7 +82,7 @@ export async function render(el, { params }) {
       </div>
       <div class="camp-topo-acoes">
         ${podeEnviar(camp)
-          ? '<button type="button" class="btn btn-whats btn-grande" data-enviar>💬 Enviar pelo WhatsApp</button>'
+          ? '<button type="button" class="btn btn-whats btn-grande" data-enviar>Enviar pelo WhatsApp</button>'
           : `<div class="aviso">${esc(motivoNaoEnviar(camp))}</div>`}
         ${admin ? `
           <div class="item-acoes">
@@ -98,7 +99,7 @@ export async function render(el, { params }) {
     </div>
 
     <div class="grade-cards camp-numeros">
-      <div class="numero"><span class="valor">${publicoHoje ?? '—'}</span><span class="rotulo">Clientes no público hoje</span></div>
+      <div class="numero"><span class="valor">${publicoHoje ?? '—'}</span><span class="rotulo">Clientes selecionados hoje</span></div>
       <div class="numero verde"><span class="valor">${registrados}</span><span class="rotulo">Clientes com envio registrado</span></div>
       <div class="numero amarelo"><span class="valor">${disparos.length}</span><span class="rotulo">Registros de envio</span></div>
       <div class="numero"><span class="valor valor-texto">${ultimo ? formatarData(ultimo.slice(0, 10)) : '—'}</span><span class="rotulo">Último registro</span></div>
@@ -295,6 +296,9 @@ export async function render(el, { params }) {
         filtro_aniversariantes_mes: !!camp.filtro_aniversariantes_mes,
         filtro_cadastro_de: camp.filtro_cadastro_de,
         filtro_cadastro_ate: camp.filtro_cadastro_ate,
+        publico_manual: !!camp.publico_manual,
+        clientes_incluidos: camp.clientes_incluidos || [],
+        clientes_excluidos: camp.clientes_excluidos || [],
         data_inicio: hojeISO(),
         data_fim: null,
         status: 'rascunho',

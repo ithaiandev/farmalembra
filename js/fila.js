@@ -76,7 +76,7 @@ export function abrirFila({
             <textarea rows="6" data-msg>${esc(dadosAtuais.mensagem)}</textarea>
           </label>
           <div class="fila-botoes">
-            <button type="button" class="btn btn-whats btn-grande" data-enviar>💬 Enviar no WhatsApp</button>
+            <button type="button" class="btn btn-whats btn-grande" data-enviar>Enviar no WhatsApp</button>
             <div class="fila-secundarios">
               ${extras.map((x, i) => `<button type="button" class="btn ${x.classe || 'btn-sec'}" data-extra="${i}">${esc(x.rotulo)}</button>`).join('')}
               <button type="button" class="btn btn-sec" data-pular>Pular ⏭</button>

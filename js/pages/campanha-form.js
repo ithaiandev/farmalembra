@@ -18,6 +18,7 @@ import {
 import {
   CATEGORIAS_SUGERIDAS, SUGESTOES, imagensDe, rodapeImagens, badgeSituacao, situacao,
 } from '../campanhas-comum.js';
+import { montarSeletor, buscarElegiveisPorIds } from '../componentes/seletor-clientes.js';
 
 const MAX_IMAGENS = 10;
 const VARS_CAMPANHA = ['{nome}', '{farmacia}', '{telefone_farmacia}', '{endereco}', '{horario}'];
@@ -51,7 +52,8 @@ export async function render(el, { params }) {
   let imagens = imagensDe(camp);
   let imagensSalvas = [...imagens];
   let porLink = camp.imagens_por_link !== false;
-  const publicoInicial = camp.filtro_aniversariantes_mes ? 'aniversariantes'
+  const publicoInicial = camp.publico_manual ? 'manual'
+    : camp.filtro_aniversariantes_mes ? 'aniversariantes'
     : camp.filtro_tags?.length ? 'tags'
       : (camp.filtro_cadastro_de || camp.filtro_cadastro_ate) ? 'cadastro' : 'todos';
   const ehRascunho = camp.status === 'rascunho';
@@ -134,6 +136,7 @@ export async function render(el, { params }) {
             <label class="chip"><input type="radio" name="publico" value="tags" ${publicoInicial === 'tags' ? 'checked' : ''}> Por grupos</label>
             <label class="chip"><input type="radio" name="publico" value="aniversariantes" ${publicoInicial === 'aniversariantes' ? 'checked' : ''}> Aniversariantes do mês</label>
             <label class="chip"><input type="radio" name="publico" value="cadastro" ${publicoInicial === 'cadastro' ? 'checked' : ''}> Cadastrados em um período</label>
+            <label class="chip"><input type="radio" name="publico" value="manual" ${publicoInicial === 'manual' ? 'checked' : ''}> Escolher clientes um a um</label>
           </div>
           <div class="chips ${publicoInicial === 'tags' ? '' : 'oculto'}" data-tags style="margin-top:12px">
             ${todasTags.map((t) => `<button type="button" class="chip" data-tag="${esc(t)}"
@@ -145,9 +148,15 @@ export async function render(el, { params }) {
             <label class="campo"><span>até</span>
               <input type="date" name="filtro_cadastro_ate" value="${esc(camp.filtro_cadastro_ate ?? '')}"></label>
           </div>
-          <div class="aviso info" data-contagem style="margin-top:12px">Calculando...</div>
-          <p class="suave pequeno" style="margin:0">🔒 Só entram clientes ativos que autorizaram <strong>receber campanhas</strong>
-            e não pediram para sair. Na hora de enviar, ainda dá para marcar e desmarcar clientes.</p>
+          <div class="aviso info oculto" data-contagem style="margin-top:12px"></div>
+          <p class="suave pequeno" style="margin:12px 0 0">🔒 Só entram clientes ativos que autorizaram <strong>receber campanhas</strong>
+            e não pediram para sair.</p>
+        </div>
+
+        <div class="card">
+          <h2>✅ Clientes que vão receber</h2>
+          <p class="suave pequeno" data-ajuda-selecao></p>
+          <div data-seletor>Carregando clientes...</div>
         </div>
       </div>
 
@@ -291,45 +300,92 @@ export async function render(el, { params }) {
     };
   };
 
+  // ---- Clientes que vão receber (seleção já no cadastro) ---------------------
+  const AJUDA = {
+    manual: 'Marque um a um quem deve receber. Use a busca para achar o cliente.',
+    filtro: 'Todos do público começam marcados. Desmarque quem não deve receber ou adicione alguém de fora.',
+  };
+  const marcados = new Set();
+  let seletor = null;
+  let ultimoTipo = null;
   let pedido = 0;
-  const contarPublico = debounce(async () => {
+
+  const avisar = (texto) => {
+    contagemEl.classList.toggle('oculto', !texto);
+    contagemEl.textContent = texto || '';
+  };
+
+  const carregarBase = debounce(async () => {
     const meu = ++pedido;
     const p = lerPublico();
-    if (p.tipo === 'tags' && !p.filtro_tags.length) {
-      contagemEl.textContent = 'Escolha pelo menos um grupo acima.';
+    const manual = p.tipo === 'manual';
+    $('[data-ajuda-selecao]').textContent = manual ? AJUDA.manual : AJUDA.filtro;
+
+    let base = [];
+    if (p.tipo === 'tags' && !p.filtro_tags.length) avisar('Escolha pelo menos um grupo acima.');
+    else if (p.tipo === 'cadastro' && !p.filtro_cadastro_de && !p.filtro_cadastro_ate) avisar('Informe pelo menos uma das datas de cadastro.');
+    else {
+      avisar('');
+      const { data, error } = await supabase.rpc('clientes_publico', {
+        p_tags: p.filtro_tags, p_aniversariantes: p.filtro_aniversariantes_mes,
+        p_cadastro_de: p.filtro_cadastro_de, p_cadastro_ate: p.filtro_cadastro_ate,
+      }).select('id, nome, telefone');
+      if (meu !== pedido) return;
+      if (error) {
+        avisar(/function|clientes_publico/i.test(error.message)
+          ? 'Falta rodar a atualização 05 no Supabase.' : 'Não foi possível carregar o público.');
+        return;
+      }
+      base = data || [];
+    }
+
+    // 1ª vez: monta com a seleção que já estava salva na campanha
+    if (!seletor) {
+      const incluidos = camp.clientes_incluidos || [];
+      const naBase = new Set(base.map((c) => c.id));
+      let extras = [];
+      try {
+        extras = manual ? [] : await buscarElegiveisPorIds(incluidos.filter((id) => !naBase.has(id)));
+      } catch (erro) {
+        mostrarErro(erro);
+      }
+      if (meu !== pedido) return;
+      if (manual) incluidos.forEach((id) => marcados.add(id));
+      else {
+        const excl = new Set(camp.clientes_excluidos || []);
+        base.forEach((c) => { if (!excl.has(c.id)) marcados.add(c.id); });
+        extras.forEach((c) => marcados.add(c.id));
+      }
+      seletor = montarSeletor($('[data-seletor]'), {
+        base, extras, marcados,
+        textoVazio: manual ? 'Nenhum cliente autorizou campanhas ainda.' : 'Nenhum cliente neste público.',
+      });
+      ultimoTipo = p.tipo;
       return;
     }
-    if (p.tipo === 'cadastro' && !p.filtro_cadastro_de && !p.filtro_cadastro_ate) {
-      contagemEl.textContent = 'Informe pelo menos uma das datas de cadastro.';
-      return;
+
+    // Trocou de "escolher um a um" para um filtro: começa com todos do filtro marcados
+    if (ultimoTipo === 'manual' && !manual) {
+      marcados.clear();
+      base.forEach((c) => marcados.add(c.id));
     }
-    contagemEl.textContent = 'Calculando...';
-    const { data, error } = await supabase.rpc('clientes_publico', {
-      p_tags: p.filtro_tags, p_aniversariantes: p.filtro_aniversariantes_mes,
-      p_cadastro_de: p.filtro_cadastro_de, p_cadastro_ate: p.filtro_cadastro_ate,
-    }).select('id');
-    if (meu !== pedido) return;
-    if (error) {
-      contagemEl.textContent = /function|clientes_publico/i.test(error.message)
-        ? 'Falta rodar a atualização 05 no Supabase.' : 'Não foi possível calcular o público.';
-      return;
-    }
-    contagemEl.innerHTML = `👥 <strong>${data.length}</strong> cliente(s) neste público hoje.`;
-  }, 300);
+    seletor.atualizarBase(base, { marcarNovos: !manual });
+    ultimoTipo = p.tipo;
+  }, 250);
 
   form.querySelectorAll('[name=publico]').forEach((r) => r.addEventListener('change', () => {
     const tipo = lerPublico().tipo;
     tagsBox.classList.toggle('oculto', tipo !== 'tags');
     cadastroBox.classList.toggle('oculto', tipo !== 'cadastro');
-    contarPublico();
+    carregarBase();
   }));
   tagsBox.addEventListener('click', (e) => {
     const chip = e.target.closest('[data-tag]');
     if (!chip) return;
     chip.setAttribute('aria-pressed', chip.getAttribute('aria-pressed') !== 'true');
-    contarPublico();
+    carregarBase();
   });
-  cadastroBox.addEventListener('change', contarPublico);
+  cadastroBox.addEventListener('change', carregarBase);
 
   // ---- Salvar ----------------------------------------------------------------
   async function salvar(novoStatus) {
@@ -348,7 +404,22 @@ export async function render(el, { params }) {
       if (p.tipo === 'cadastro' && !p.filtro_cadastro_de && !p.filtro_cadastro_ate) {
         return toast('Informe o período de cadastro dos clientes.', 'erro');
       }
+      if (p.tipo === 'manual' && !(seletor?.selecionados().length)) {
+        return toast('Marque pelo menos um cliente para receber a campanha.', 'erro');
+      }
     }
+    if (!seletor) return toast('Aguarde a lista de clientes terminar de carregar.', 'info');
+
+    // Seleção de clientes: no modo manual guarda os escolhidos; no filtro, só os ajustes
+    const manual = p.tipo === 'manual';
+    const idsBase = seletor.base().map((c) => c.id);
+    const selecao = manual
+      ? { publico_manual: true, clientes_incluidos: seletor.selecionados().map((c) => c.id), clientes_excluidos: [] }
+      : {
+        publico_manual: false,
+        clientes_excluidos: idsBase.filter((id) => !marcados.has(id)),
+        clientes_incluidos: seletor.extras().filter((c) => marcados.has(c.id)).map((c) => c.id),
+      };
     if (p.filtro_cadastro_de && p.filtro_cadastro_ate && p.filtro_cadastro_ate < p.filtro_cadastro_de) {
       return toast('No período de cadastro, a data final não pode ser antes da inicial.', 'erro');
     }
@@ -368,14 +439,16 @@ export async function render(el, { params }) {
       filtro_aniversariantes_mes: p.filtro_aniversariantes_mes,
       filtro_cadastro_de: p.filtro_cadastro_de,
       filtro_cadastro_ate: p.filtro_cadastro_ate,
+      ...selecao,
     };
     const consulta = nova
       ? supabase.from('campanhas').insert(dados)
       : supabase.from('campanhas').update(dados).eq('id', camp.id);
     const { data: salva, error } = await consulta.select().single();
     if (error) {
-      const falta = /categoria|data_inicio|filtro_cadastro|status_check/.test(error.message);
-      mostrarErro(error, falta ? 'Falta rodar a atualização 05 no Supabase (veja as instruções).' : undefined);
+      const falta = /publico_manual/.test(error.message) ? '06'
+        : /categoria|data_inicio|filtro_cadastro|status_check/.test(error.message) ? '05' : null;
+      mostrarErro(error, falta ? `Falta rodar a atualização ${falta} no Supabase (veja as instruções).` : undefined);
       return;
     }
 
@@ -417,5 +490,5 @@ export async function render(el, { params }) {
 
   // ---- Início ----------------------------------------------------------------
   mostrarImagens();
-  contarPublico();
+  carregarBase();
 }

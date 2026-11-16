@@ -115,6 +115,18 @@ export function textoPeriodo(c) {
 }
 
 export function descreverPublico(c) {
+  const incl = c.clientes_incluidos?.length || 0;
+  const excl = c.clientes_excluidos?.length || 0;
+  if (c.publico_manual) return `${incl} cliente(s) escolhido(s) um a um`;
+  const ajustes = [
+    excl ? `${excl} desmarcado(s)` : '',
+    incl ? `${incl} adicionado(s) à mão` : '',
+  ].filter(Boolean).join(', ');
+  const base = descreverFiltro(c);
+  return ajustes ? `${base} (${ajustes})` : base;
+}
+
+function descreverFiltro(c) {
   const partes = [];
   if (c.filtro_aniversariantes_mes) partes.push('Aniversariantes do mês');
   if (c.filtro_tags?.length) partes.push(`Grupos: ${c.filtro_tags.join(', ')}`);
@@ -135,6 +147,29 @@ export function parametrosPublico(c) {
     p_cadastro_de: c.filtro_cadastro_de || null,
     p_cadastro_ate: c.filtro_cadastro_ate || null,
   };
+}
+
+/**
+ * Clientes que a campanha deve receber, já com a seleção feita no cadastro.
+ * Devolve { base, extras, marcados }:
+ *   - público por filtro: base = filtro, marcados = base − desmarcados + adicionados
+ *   - escolha manual:     base = escolhidos, todos marcados
+ * (Quem perdeu a autorização depois do cadastro some sozinho.)
+ */
+export async function carregarSelecao(c, { supabase, buscarElegiveisPorIds }) {
+  const incluidos = c.clientes_incluidos || [];
+  if (c.publico_manual) {
+    const base = await buscarElegiveisPorIds(incluidos);
+    return { base, extras: [], marcados: new Set(base.map((x) => x.id)) };
+  }
+  const { data, error } = await supabase.rpc('clientes_publico', parametrosPublico(c)).select('id, nome, telefone');
+  if (error) throw error;
+  const base = data || [];
+  const naBase = new Set(base.map((x) => x.id));
+  const extras = await buscarElegiveisPorIds(incluidos.filter((id) => !naBase.has(id)));
+  const excluidos = new Set(c.clientes_excluidos || []);
+  const marcados = new Set([...base.filter((x) => !excluidos.has(x.id)), ...extras].map((x) => x.id));
+  return { base, extras, marcados };
 }
 
 /** Imagens da campanha (lista nova ou a antiga, de uma imagem só) */

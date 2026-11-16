@@ -1371,3 +1371,8 @@ create policy campanhas_imagens_atualizar on storage.objects
   with check (bucket_id = 'campanhas' and public.eh_admin());
 
 -- Fim ✅
+
+-- ---------------------------------------------------------------------
+-- 13. CLIENTES ESCOLHIDOS NO CADASTRO DA CAMPANHA (atualização 06)
+-- ---------------------------------------------------------------------
+alter table public.campanhas add column if not exists publico_manual boolean not null default false;

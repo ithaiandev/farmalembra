@@ -24,13 +24,13 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Promoção</title>
-  <meta name="theme-color" content="#0a8a4c">
+  <meta name="theme-color" content="#0a0c11">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
   <style>
     /* Página pública: só as fotos da promoção (sem login, sem dados de clientes) */
     .promo-topo {
-      background: linear-gradient(110deg, #0a6b3d 0%, #0a8a4c 70%, #128f73 100%);
+      background: radial-gradient(500px 220px at 80% 20%, rgba(139,92,246,.45), transparent 70%), linear-gradient(120deg, #151a26, #232a42);
       color: #fff; text-align: center; padding: 22px 16px 18px;
     }
     .promo-topo h1 { margin: 0; font-size: 1.5rem; }
@@ -43,7 +43,6 @@
     }
     .promo-info { text-align: center; margin-top: 20px; }
     .promo-info .btn { margin-top: 10px; }
-    .promo-rodape { text-align: center; margin-top: 26px; font-size: .8rem; color: var(--texto-suave); }
   </style>
   <script src="js/inicio.js"></script>
 </head>
@@ -58,10 +57,9 @@
 
     <div class="promo-info oculto" data-info>
       <p data-endereco></p>
-      <a class="btn btn-whats btn-grande oculto" data-whats target="_blank" rel="noopener">💬 Falar com a farmácia</a>
+      <a class="btn btn-whats btn-grande oculto" data-whats target="_blank" rel="noopener">Falar com a farmácia</a>
     </div>
 
-    <p class="promo-rodape">Promoção válida enquanto durarem os estoques. · FarmaLembra</p>
   </main>
 
   <script type="module" src="js/promo.js"></script>

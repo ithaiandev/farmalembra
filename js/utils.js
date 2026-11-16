@@ -199,7 +199,10 @@ export function linkWhatsApp(telefone, texto = '') {
 export function gerarCSV(linhas, colunas) {
   // colunas: [{ chave, titulo, formatar? }]
   const celula = (v) => {
-    const s = String(v ?? '');
+    let s = String(v ?? '');
+    // Proteção contra "fórmula injetada" (CSV injection): um texto como
+    // =HYPERLINK(...) viraria fórmula ao abrir no Excel. Números negativos ficam como estão.
+    if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = `'${s}`;
     return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const cab = colunas.map((c) => celula(c.titulo)).join(';');

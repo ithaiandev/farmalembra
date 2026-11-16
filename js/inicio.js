@@ -12,10 +12,10 @@ if (window.top !== window.self) {
 // Guarda o endereço antes do Supabase limpar (links de convite / recuperar senha)
 window.__hashInicial = location.hash;
 
-// Modo escuro: escolha salva ou a do aparelho
+// Modo escuro é o padrão; o claro só se a pessoa escolheu (botão da lua)
 try {
   const t = localStorage.getItem('tema');
-  if (t === 'escuro' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+  if (t !== 'claro') {
     document.documentElement.dataset.tema = 'escuro';
   }
-} catch (e) {}
+} catch (e) { document.documentElement.dataset.tema = 'escuro'; }

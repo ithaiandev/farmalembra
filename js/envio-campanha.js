@@ -1,7 +1,7 @@
 // =====================================================================
 // "Enviar pelo WhatsApp" — envio MANUAL de campanha (sem API)
 //
-//  1. Selecionar clientes (só quem autorizou campanhas)
+//  1. Selecionar clientes (já vem com a seleção feita no cadastro)
 //  2. Ver a mensagem e copiar o texto
 //  3. Abrir o WhatsApp de cada cliente com a mensagem pronta
 //     (ou usar a lista de transmissão do WhatsApp Business)
@@ -12,20 +12,14 @@
 // =====================================================================
 import { supabase } from './supabase.js';
 import { abrirModal, confirmar, toast, mostrarErro, htmlCarregando, htmlVazio, comBotaoOcupado } from './ui.js';
-import { esc, debounce, formatarTelefone, hojeISO, baixarArquivo, gerarVCard } from './utils.js';
+import { hojeISO, baixarArquivo, gerarVCard } from './utils.js';
 import { abrirFila } from './fila.js';
 import {
-  parametrosPublico, mensagemParaCliente, mensagemParaTodos, copiarTexto, rodapeImagens, imagensDe,
+  mensagemParaCliente, mensagemParaTodos, copiarTexto, rodapeImagens, imagensDe, carregarSelecao,
 } from './campanhas-comum.js';
+import { montarSeletor, buscarElegiveisPorIds } from './componentes/seletor-clientes.js';
 
-const CAMPOS = 'id, nome, telefone';
 const LIMITE_TRANSMISSAO = 256; // máximo de contatos por lista de transmissão no WhatsApp
-
-async function carregarPublico(camp) {
-  const { data, error } = await supabase.rpc('clientes_publico', parametrosPublico(camp)).select(CAMPOS);
-  if (error) throw error;
-  return data || [];
-}
 
 /** Clientes que já têm envio registrado nesta campanha */
 async function carregarJaRegistrados(campanhaId) {
@@ -102,38 +96,29 @@ export async function abrirEnvioCampanha(camp) {
 function montarJanela(area, camp, fechar) {
   const temImagensManuais = imagensDe(camp).length && camp.imagens_por_link === false;
 
-  Promise.all([carregarPublico(camp), carregarJaRegistrados(camp.id), mensagemParaTodos(camp)])
-    .then(([publico, jaRegistrados, textoTodos]) => desenhar(publico, jaRegistrados, textoTodos))
+  Promise.all([
+    carregarSelecao(camp, { supabase, buscarElegiveisPorIds }),
+    carregarJaRegistrados(camp.id),
+    mensagemParaTodos(camp),
+  ])
+    .then(([selecao, jaRegistrados, textoTodos]) => desenhar(selecao, jaRegistrados, textoTodos))
     .catch((erro) => {
       mostrarErro(erro, 'Não foi possível carregar os clientes.');
       area.innerHTML = htmlVazio('Não foi possível carregar os clientes. Tente de novo.', '⚠️');
     });
 
-  function desenhar(publico, jaRegistrados, textoTodos) {
-    let extras = [];
+  function desenhar({ base, extras, marcados }, jaRegistrados, textoTodos) {
     // Quem já tem envio registrado começa desmarcado (evita mandar duas vezes)
-    const marcados = new Set(publico.filter((c) => !jaRegistrados.has(c.id)).map((c) => c.id));
+    jaRegistrados.forEach((id) => marcados.delete(id));
 
     area.innerHTML = `
       <div class="aviso info">ℹ️ <span><strong>Envio manual.</strong> O sistema abre o WhatsApp com a mensagem pronta e você
         toca em enviar. Fica registrado quem foi selecionado e quando o WhatsApp foi aberto — o sistema
         <strong>não consegue confirmar</strong> se a mensagem foi enviada ou entregue.</span></div>
 
-      <div class="passo"><b>1</b> Selecione os clientes</div>
-      <div class="aviso ok" data-contagem></div>
-      <div class="barra-filtros">
-        <label class="busca"><input type="search" data-busca placeholder="Procurar na lista" aria-label="Procurar cliente na lista"></label>
-        <button type="button" class="btn btn-sec btn-pequeno" data-marcar>✓ Marcar todos</button>
-        <button type="button" class="btn btn-sec btn-pequeno" data-desmarcar>Desmarcar todos</button>
-        ${jaRegistrados.size ? '<button type="button" class="btn btn-sec btn-pequeno" data-sem-repetidos>Desmarcar quem já recebeu</button>' : ''}
-      </div>
-      <ul class="lista lista-contatos" data-contatos></ul>
-      <details class="adicionar-contato">
-        <summary class="btn btn-link" style="padding-left:0">➕ Adicionar cliente que não está no público</summary>
-        <label class="busca" style="display:block;margin-top:8px"><input type="search" data-busca-add
-          placeholder="Nome ou telefone" aria-label="Procurar cliente para adicionar"></label>
-        <ul class="lista" data-resultados-add></ul>
-      </details>
+      <div class="passo"><b>1</b> Confira os clientes</div>
+      ${jaRegistrados.size ? '<p class="suave pequeno">Quem já recebeu esta campanha começa desmarcado.</p>' : ''}
+      <div data-seletor></div>
       <p class="suave pequeno" style="margin:8px 0 0">🔒 Só aparecem clientes ativos que autorizaram receber campanhas e não pediram para sair.</p>
 
       <hr class="separador">
@@ -146,7 +131,7 @@ function montarJanela(area, camp, fechar) {
 
       <hr class="separador">
       <div class="passo"><b>3</b> Envie</div>
-      <button type="button" class="btn btn-whats btn-grande btn-bloco" data-individual>💬 Abrir WhatsApp um por um</button>
+      <button type="button" class="btn btn-whats btn-grande btn-bloco" data-individual>Abrir WhatsApp um por um</button>
       <p class="suave pequeno" style="margin-top:6px">Abre a conversa de cada cliente com a mensagem e o nome dele. Pode parar e continuar depois.</p>
 
       <details class="transmissao">
@@ -164,94 +149,25 @@ function montarJanela(area, camp, fechar) {
       </details>`;
 
     const $ = (s) => area.querySelector(s);
-    const listaEl = $('[data-contatos]');
-    const buscaEl = $('[data-busca]');
 
-    const todos = () => {
-      const ids = new Set(publico.map((c) => c.id));
-      return [...publico, ...extras.filter((c) => !ids.has(c.id))].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-    };
-    const selecionados = () => todos().filter((c) => marcados.has(c.id));
-    const visiveis = () => {
-      const termo = buscaEl.value.trim().toLowerCase();
-      const dig = termo.replace(/\D/g, '');
-      return todos().filter((c) => !termo || c.nome.toLowerCase().includes(termo) || (dig.length >= 3 && c.telefone.includes(dig)));
-    };
-
-    const atualizarContagem = () => {
-      const sel = selecionados();
-      const repetidos = sel.filter((c) => jaRegistrados.has(c.id)).length;
-      $('[data-contagem]').innerHTML = `👥 <strong>${sel.length}</strong> de ${todos().length} cliente(s) selecionado(s)`
-        + (repetidos ? ` · ${repetidos} já tem envio registrado nesta campanha` : '')
-        + (sel.length > LIMITE_TRANSMISSAO ? `<br>⚠️ Mais de ${LIMITE_TRANSMISSAO}: na lista de transmissão, divida em mais de uma.` : '');
-      $('[data-individual]').textContent = `💬 Abrir WhatsApp um por um (${sel.length})`;
-      $('[data-individual]').disabled = !sel.length;
-      $('[data-transmissao]').disabled = !sel.length;
-    };
-
-    const desenharLista = () => {
-      const lista = visiveis();
-      listaEl.innerHTML = lista.length ? lista.map((c) => `
-        <li class="item contato">
-          <label class="contato-label">
-            <input type="checkbox" data-id="${c.id}" ${marcados.has(c.id) ? 'checked' : ''}>
-            <span class="item-principal">
-              <span class="item-titulo">${esc(c.nome)}</span>
-              <span class="item-sub">${esc(formatarTelefone(c.telefone))}
-                ${extras.some((x) => x.id === c.id) ? ' <span class="badge badge-azul">adicionado</span>' : ''}
-                ${jaRegistrados.has(c.id) ? ' <span class="badge badge-cinza">já recebeu</span>' : ''}</span>
-            </span>
-          </label>
-        </li>`).join('')
-        : `<li>${htmlVazio(buscaEl.value ? 'Ninguém encontrado com essa busca.' : 'Nenhum cliente neste público.', '👥')}</li>`;
-      atualizarContagem();
-    };
-
-    listaEl.addEventListener('change', (e) => {
-      const id = e.target.dataset?.id;
-      if (!id) return;
-      if (e.target.checked) marcados.add(id); else marcados.delete(id);
-      atualizarContagem();
-    });
-    buscaEl.addEventListener('input', debounce(desenharLista, 200));
-    $('[data-marcar]').addEventListener('click', () => { visiveis().forEach((c) => marcados.add(c.id)); desenharLista(); });
-    $('[data-desmarcar]').addEventListener('click', () => { visiveis().forEach((c) => marcados.delete(c.id)); desenharLista(); });
-    $('[data-sem-repetidos]')?.addEventListener('click', () => { jaRegistrados.forEach((id) => marcados.delete(id)); desenharLista(); });
-
-    // Adicionar cliente de fora do público (só quem autorizou campanhas)
-    const resultadosAdd = $('[data-resultados-add]');
-    $('[data-busca-add]').addEventListener('input', debounce(async (e) => {
-      const termo = e.target.value.replace(/[%_,()*\\]/g, ' ').trim();
-      if (termo.length < 2) { resultadosAdd.innerHTML = ''; return; }
-      const dig = termo.replace(/\D/g, '');
-      let q = supabase.from('clientes').select(CAMPOS)
-        .eq('ativo', true).eq('consentimento_publicidade', true).eq('opt_out', false)
-        .order('nome').limit(10);
-      q = dig.length >= 3 ? q.like('telefone', `%${dig}%`) : q.ilike('nome', `%${termo}%`);
-      const { data, error } = await q;
-      if (error) return mostrarErro(error);
-      const ja = new Set(todos().map((c) => c.id));
-      const novos = (data || []).filter((c) => !ja.has(c.id) || !marcados.has(c.id));
-      resultadosAdd.innerHTML = novos.length ? novos.map((c) => `
-        <li class="item"><div class="item-principal"><div class="item-titulo">${esc(c.nome)}</div>
-          <div class="item-sub">${esc(formatarTelefone(c.telefone))}</div></div>
-          <button type="button" class="btn btn-primario btn-pequeno" data-add="${c.id}">＋ Adicionar</button></li>`).join('')
-        : '<li class="suave pequeno" style="padding:8px 0">Nenhum cliente encontrado (ou já está selecionado). Quem não autorizou campanhas não aparece.</li>';
-      resultadosAdd.querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => {
-        const c = novos.find((x) => x.id === b.dataset.add);
-        if (!publico.some((x) => x.id === c.id) && !extras.some((x) => x.id === c.id)) extras.push(c);
-        marcados.add(c.id);
-        b.closest('li').remove();
-        desenharLista();
-        toast(`${c.nome} adicionado(a).`);
-      }));
-    }, 300));
-
-    // Prévia: com o nome do 1º selecionado (ou um exemplo)
     const atualizarPrevia = async () => {
-      const exemplo = selecionados()[0] || { nome: 'Maria Silva' };
+      const exemplo = seletor?.selecionados()[0] || { nome: 'Maria Silva' };
       $('[data-previa]').textContent = await mensagemParaCliente(camp, exemplo);
     };
+    const aoMudar = () => {
+      const n = seletor ? seletor.selecionados().length : 0;
+      $('[data-individual]').textContent = `Abrir WhatsApp um por um (${n})`;
+      $('[data-individual]').disabled = !n;
+      $('[data-transmissao]').disabled = !n;
+      atualizarPrevia();
+    };
+
+    let seletor = null;
+    seletor = montarSeletor($('[data-seletor]'), {
+      base, extras, marcados, jaRegistrados, aoMudar,
+      textoVazio: camp.publico_manual ? 'Nenhum cliente escolhido.' : 'Nenhum cliente neste público.',
+    });
+    aoMudar();
 
     area.querySelectorAll('[data-copiar]').forEach((b) => b.addEventListener('click', async () => {
       toast(await copiarTexto(textoTodos)
@@ -260,14 +176,14 @@ function montarJanela(area, camp, fechar) {
     }));
 
     $('[data-vcf]').addEventListener('click', () => {
-      const sel = selecionados();
+      const sel = seletor.selecionados();
       if (!sel.length) return toast('Nenhum cliente selecionado.', 'erro');
       baixarArquivo(`contatos-campanha-${hojeISO()}.vcf`, gerarVCard(sel), 'text/vcard;charset=utf-8');
       toast(`${sel.length} contato(s) baixado(s).`);
     });
 
     $('[data-individual]').addEventListener('click', async () => {
-      const sel = selecionados();
+      const sel = seletor.selecionados();
       if (!sel.length) return toast('Selecione pelo menos um cliente.', 'erro');
       const ok = await confirmar({
         titulo: 'Abrir WhatsApp um por um',
@@ -280,7 +196,7 @@ function montarJanela(area, camp, fechar) {
 
     $('[data-transmissao]').addEventListener('click', async (e) => {
       const botao = e.currentTarget;
-      const sel = selecionados();
+      const sel = seletor.selecionados();
       if (!sel.length) return toast('Selecione pelo menos um cliente.', 'erro');
       const ok = await confirmar({
         titulo: 'Registrar envio pela lista',
@@ -299,9 +215,5 @@ function montarJanela(area, camp, fechar) {
         }
       }, 'Registrando...');
     });
-
-    desenharLista();
-    atualizarPrevia();
-    listaEl.addEventListener('change', debounce(atualizarPrevia, 300));
   }
 }

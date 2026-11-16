@@ -246,7 +246,7 @@ async function passoPronto(el, cliente, medicamento, novo) {
       ${!pode ? '<div class="aviso">Este cliente não autorizou mensagens, então não receberá lembretes.</div>' : ''}
       <div class="acoes-rapidas">
         ${msgBV ? `<a class="btn btn-whats btn-grande" target="_blank" rel="noopener"
-            href="${esc(linkWhatsApp(cliente.telefone, msgBV))}">💬 Enviar boas-vindas</a>` : ''}
+            href="${esc(linkWhatsApp(cliente.telefone, msgBV))}">Enviar boas-vindas</a>` : ''}
         <button class="btn btn-primario btn-grande" data-de-novo>🛒 Próximo cliente</button>
         <a class="btn btn-sec btn-grande" href="#/clientes/${cliente.id}">Ver ficha</a>
       </div>

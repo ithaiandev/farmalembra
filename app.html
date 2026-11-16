@@ -7,7 +7,7 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>FarmaLembra</title>
-  <meta name="theme-color" content="#0a8a4c">
+  <meta name="theme-color" content="#0a0c11">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="img/icone-192.png">
@@ -33,6 +33,11 @@
       <symbol id="i-sair" viewBox="0 0 24 24"><path d="M14.5 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 8l-4 4 4 4M6 12h11"/></symbol>
       <symbol id="i-mais" viewBox="0 0 24 24"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></symbol>
       <symbol id="i-tema" viewBox="0 0 24 24"><path d="M20.5 14A8.5 8.5 0 1 1 10 3.5a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+      <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+      <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol>
+      <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+      <symbol id="i-presente" viewBox="0 0 24 24"><rect x="3.5" y="8.5" width="17" height="4" rx="1"/><path d="M5 12.5v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7M12 8.5v12"/><path d="M12 8.5S10.5 4 8 4.5 7 8.5 12 8.5zM12 8.5S13.5 4 16 4.5 17 8.5 12 8.5z"/></symbol>
+      <symbol id="i-tendencia" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
     </defs>
   </svg>
 
@@ -42,7 +47,7 @@
       <img src="img/logo.svg" alt="">
       <span class="marca-texto">
         <strong data-nome-farmacia>FarmaLembra</strong>
-        <small>Fidelização &amp; relacionamento</small>
+        <small>Fidelização de clientes</small>
       </span>
     </a>
 
@@ -77,9 +82,20 @@
         <img src="img/logo.svg" alt="">
         <strong data-nome-farmacia>FarmaLembra</strong>
       </a>
+      <form class="topo-busca" data-busca-global role="search">
+        <svg class="ico"><use href="#i-busca"/></svg>
+        <input type="search" name="q" placeholder="Buscar cliente por nome ou telefone..." aria-label="Buscar cliente" autocomplete="off">
+        <kbd>Ctrl K</kbd>
+      </form>
       <span class="topo-titulo" data-titulo-pagina></span>
       <span class="espaco"></span>
-      <button type="button" class="btn-icone" data-tema title="Modo claro/escuro" aria-label="Alternar modo escuro"><svg class="ico"><use href="#i-tema"/></svg></button>
+      <button type="button" class="topo-botao" data-alternar-tema title="Modo claro/escuro" aria-label="Alternar modo claro/escuro"><svg class="ico"><use href="#i-tema"/></svg></button>
+      <a class="topo-botao" href="#/lembretes" data-sino title="Lembretes de hoje" aria-label="Lembretes de hoje">
+        <svg class="ico"><use href="#i-lembretes"/></svg><span class="ponto oculto" data-sino-ponto></span></a>
+      <span class="topo-usuario">
+        <span class="avatar avatar-pequeno" data-avatar aria-hidden="true"></span>
+        <span class="topo-usuario-texto" data-usuario-topo></span>
+      </span>
       <span class="avatar avatar-pequeno topo-avatar" data-avatar aria-hidden="true"></span>
     </header>
 

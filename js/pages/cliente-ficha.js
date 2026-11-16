@@ -39,7 +39,7 @@ export async function render(el, { params, query }) {
     ${query.boasVindas && podeReceber ? `
       <div class="aviso ok">
         <span>👋 Cliente cadastrado com autorização. Quer enviar a mensagem de boas-vindas?</span>
-        <button class="btn btn-whats btn-pequeno" data-boas-vindas>💬 Enviar boas-vindas</button>
+        <button class="btn btn-whats btn-pequeno" data-boas-vindas>Enviar boas-vindas</button>
       </div>` : ''}
 
     <div class="card">
@@ -65,7 +65,7 @@ export async function render(el, { params, query }) {
         <dt>Cadastrado</dt><dd>${formatarDataHora(c.criado_em)}${c.criado_por_perfil?.nome ? ` por ${esc(c.criado_por_perfil.nome)}` : ''}</dd>
       </dl>
       <div class="acoes-rapidas" style="margin-bottom:0">
-        <a class="btn btn-whats" href="${linkWhatsApp(c.telefone)}" target="_blank" rel="noopener">💬 Abrir WhatsApp</a>
+        <a class="btn btn-whats" href="${linkWhatsApp(c.telefone)}" target="_blank" rel="noopener">Abrir WhatsApp</a>
         <a class="btn btn-sec" href="#/clientes/${c.id}/editar">✏️ Editar dados</a>
         ${c.opt_out
           ? '<button class="btn btn-sec" data-voltar-receber>✅ Cliente voltou a autorizar</button>'
@@ -289,7 +289,7 @@ export async function render(el, { params, query }) {
         <div class="item-acoes">
           <button class="btn btn-verde btn-pequeno" data-acao="recompra" data-id="${m.id}">✓ Recomprou hoje</button>
           <button class="btn btn-sec btn-pequeno" data-acao="recompra-outra" data-id="${m.id}">Outra data/qtd.</button>
-          ${podeReceber && m.ativo ? `<button class="btn btn-sec btn-pequeno" data-acao="lembrar" data-id="${m.id}">💬 Lembrar agora</button>` : ''}
+          ${podeReceber && m.ativo ? `<button class="btn btn-sec btn-pequeno com-whats" data-acao="lembrar" data-id="${m.id}">Lembrar agora</button>` : ''}
           <button class="btn btn-sec btn-pequeno" data-acao="editar" data-id="${m.id}">✏️ Editar</button>
           <button class="btn btn-sec btn-pequeno" data-acao="pausar" data-id="${m.id}">${m.ativo ? '⏸ Pausar' : '▶ Reativar'}</button>
           ${ehAdmin() ? `<button class="btn btn-link btn-pequeno" data-acao="excluir" data-id="${m.id}">Excluir</button>` : ''}
@@ -306,7 +306,7 @@ function abrirEnvioAvulso(cliente, mensagem, aoEnviar) {
       <label class="campo"><span>Mensagem</span><textarea rows="7" data-msg>${esc(mensagem)}</textarea></label>
       <div class="acoes-modal">
         <button type="button" class="btn btn-sec" data-cancelar>Cancelar</button>
-        <button type="button" class="btn btn-whats btn-grande" data-enviar>💬 Enviar no WhatsApp</button>
+        <button type="button" class="btn btn-whats btn-grande" data-enviar>Enviar no WhatsApp</button>
       </div>`,
     aoAbrir(dlg, fechar) {
       dlg.querySelector('[data-cancelar]').addEventListener('click', () => fechar());

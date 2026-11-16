@@ -91,7 +91,7 @@ export async function render(el, { query }) {
             ${i.lembrete_erro ? `<br>⚠️ ${esc(i.lembrete_erro)}` : ''}</div>
         </div>
         <div class="item-acoes">
-          ${id !== 'proximos' && i.pode_receber ? `<button class="btn btn-whats btn-pequeno" data-enviar="${i.medicamento_id}">💬 Enviar no WhatsApp</button>` : ''}
+          ${id !== 'proximos' && i.pode_receber ? `<button class="btn btn-whats btn-pequeno" data-enviar="${i.medicamento_id}">Enviar no WhatsApp</button>` : ''}
           <button class="btn btn-verde btn-pequeno" data-recomprou="${i.medicamento_id}">✓ Recomprou</button>
           ${id === 'hoje' ? `<button class="btn btn-link btn-pequeno" data-cancelar="${i.medicamento_id}">Cancelar</button>` : ''}
         </div>
